@@ -63,7 +63,7 @@ To be edited...
 | **Architecture** | Mixture of Experts (MoE), RAG (Retrieval-Augmented Generation) |
 | **Backend & API** | Flask (Planned), Redis (State Management) |
 | **Environment** | Docker, WSL2 (Ubuntu), NVIDIA CUDA |
-| **Tools** | Git, SourceTree, Google Colab (Training) |
+| **Tools** | Git, SourceTree, Google Colab (Training), Kaggle (Training) |
 
 ---
 

@@ -1,0 +1,19 @@
+# --- 忽略虛擬環境 ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- 忽略敏感資料 (API Key) ---
+.env
+
+# --- 忽略超大模型檔案 (GitHub 限制 100MB) ---
+*.safetensors
+*.bin
+*.pt
+*.pth
+models/
+outputs/
+
+# --- 忽略 OS 產生的雜檔 ---
+.DS_Store

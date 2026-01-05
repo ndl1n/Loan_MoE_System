@@ -1,0 +1,14 @@
+torch
+torchvision
+torchaudio
+transformers
+peft
+bitsandbytes
+accelerate
+scipy
+python-dotenv
+openai
+flask
+line-bot-sdk
+redis
+numpy

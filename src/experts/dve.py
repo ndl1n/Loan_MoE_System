@@ -1,12 +1,17 @@
 import json
 import torch
+from datetime import datetime
 from transformers import TextStreamer
+from peft import PeftModel
+import re
+
+from ..rag_service import rag_engine
 from ..config import DVE_ADAPTER_PATH, DVE_PROMPT_TEMPLATE, DVE_INSTRUCTION, DEVICE
 from .base import BaseExpert
 
 class DVE_Expert(BaseExpert):
     """
-    DVE: 資料查核專家 (Schema Fix Version)
+    DVE: 資料查核專家 (Read/Write RAG Integrated Version)
     """
     def process(self, task_data, history=[]):
         query = task_data.get("user_query", "")
@@ -21,124 +26,159 @@ class DVE_Expert(BaseExpert):
                 "next_step": "等待技術排除"
             }
 
-        # 2. 準備比對資料
-        # 為了不讓模型當機，我們必須「湊齊」訓練資料裡的所有欄位
-        print("🛡️ DVE 啟動 AI 查核模式 (Schema Aligned)...")
+        print("🛡️ DVE 啟動 AI 查核模式 (Loading from Metadata)...")
+
+        # --- 2. 準備 RAG 資料 (Context) ---
+        user_id = profile.get("id", "UNKNOWN")
+        user_name = profile.get("name", "Guest")
         
-        # [模擬 RAG]：這裡要把所有訓練資料有的 key 都補上，沒有的就填 "無"
-        mock_rag_context = {
-            "檔案中紀錄職業": "公立高中教師",   # 模擬歷史資料
-            "上次貸款資金用途": "房屋修繕",     # (補)
-            "檔案中聯絡電話": "0920-987-654",
-            "歷史違約紀錄": "無",
-            "檔案中服務公司名稱": "XX市立高中",
-            "檔案中年薪/月薪": "60000",
-            "信用報告查詢次數": "1",           # (補)
-            "地址變動次數": "0"                # (補)
-        }
+        # 從 MongoDB 撈取
+        history_records = rag_engine.get_user_history_by_id(user_id)
         
-        # [組建 Input]：這裡的 Key 必須跟訓練資料一模一樣！
+        rag_context = {}
+        
+        if history_records:
+            print(f"🔍 發現歷史紀錄，正在組裝 Context...")
+            latest_record = history_records[-1] # 取最新
+            meta = latest_record.get("metadata", {})
+            
+            # 直接從 Metadata 對應到 DVE 需要的 Key
+            rag_context = {
+                "檔案中紀錄職業": meta.get("hist_job", "無紀錄"),
+                "上次貸款資金用途": meta.get("hist_purpose", "無紀錄"),
+                "檔案中聯絡電話": meta.get("hist_phone", "無紀錄"),
+                "歷史違約紀錄": meta.get("default_record", "無"),
+                "檔案中服務公司名稱": meta.get("hist_company", "無紀錄"),
+                "檔案中年薪/月薪": str(meta.get("hist_income", "0")),
+                "信用報告查詢次數": str(meta.get("inquiry_count", "0")),
+            }
+        else:
+            print("⚠️ 新用戶 (無歷史紀錄)")
+            rag_context = {
+                "檔案中紀錄職業": "無紀錄 (新戶)",
+                "上次貸款資金用途": "無紀錄",
+                "檔案中聯絡電話": "無紀錄",
+                "歷史違約紀錄": "無",
+                "檔案中服務公司名稱": "無紀錄",
+                "檔案中年薪/月薪": "0",
+                "信用報告查詢次數": "0",
+            }
+
+        # --- 3. 組建 Input JSON (Query vs Context) ---
         dve_input_data = {
             "核心識別資訊": {
-                "申請人姓名": profile.get("name", "測試人員"),
-                "身分證字號": profile.get("id", "A123456789")
+                "申請人姓名": user_name,
+                "身分證字號": user_id
             },
             "最新口述資訊 (Query) 擷取": {
-                "職業": profile.get("job", "待業中"),  # 從 Profile 拿，沒有就填預設
-                "資金用途": "週轉金",                  # (寫死) 暫時填入，之後可從對話分析
-                "聯絡電話": "0912-345-678",            # (寫死) 
-                "服務公司名稱": "未提供",              # (寫死)
+                "職業": profile.get("job", "待業中"),
+                "資金用途": "個人進修", # 範例寫死，實務應從 profile 抓
+                "聯絡電話": "0910-111-888", # 範例寫死，實務應從 profile 抓
+                "服務公司名稱": profile.get("company", "未提供"),
                 "月薪": str(profile.get("income", "0"))
             },
-            "RAG 檢索的歷史數據 (Context) 擷取": mock_rag_context
+            "RAG 檢索的歷史數據 (Context) 擷取": rag_context
         }
         
         input_json_str = json.dumps(dve_input_data, ensure_ascii=False)
 
-        # 3. 呼叫 LLM (加入 Streamer 監控)
-        # 設定 Streamer，讓它即時印出文字，這樣你就知道它有沒有在跑
+        # --- Debug ---
+        print("\n" + "="*50)
+        print("📝 DVE 最終組裝的 Input JSON:")
+        print(json.dumps(dve_input_data, indent=2, ensure_ascii=False))
+        print("="*50 + "\n")
+
+        # --- 4. 呼叫 LLM (Stream Mode) ---
         streamer = TextStreamer(self.llm._tokenizer, skip_prompt=True)
-        
         print(f"🌊 Input JSON 已構建，長度: {len(input_json_str)} chars")
         print("🌊 開始生成 (Stream Mode)... 請看下方輸出 👇")
 
-        # 使用 llm_utils 的底層 generate (為了傳入 streamer)
-        # 這裡我們稍微繞過 get_expert_response 的封裝，直接調用以確保能看到 Stream
-        
         model = self.llm._base_model
         tokenizer = self.llm._tokenizer
         
-        # 載入 Adapter
-        from peft import PeftModel
         model = PeftModel.from_pretrained(model, DVE_ADAPTER_PATH)
         model.eval()
 
-        # 格式化 Prompt
         prompt = DVE_PROMPT_TEMPLATE.format(DVE_INSTRUCTION, input_json_str)
         inputs = tokenizer(prompt, return_tensors="pt").to(DEVICE)
 
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                streamer=streamer,            # <--- 關鍵：即時顯示
+                streamer=streamer,
                 max_new_tokens=512,
-                temperature=0.1,              # DVE 需要低溫
-                repetition_penalty=1.2,       # 防止鬼打牆
+                temperature=0.1,
+                repetition_penalty=1.2,
                 eos_token_id=tokenizer.eos_token_id
             )
         
-        # 4. 解析與策略分流 (修正版：強力防鬼打牆)
+        # --- 5. 解析與策略分流 ---
         full_text = tokenizer.decode(outputs[0], skip_special_tokens=False) # 改成 False 以便我們偵測特殊符號
         
         try:
-            # === [新增] 強力切割邏輯 ===
-            # 1. 如果出現結束符號，直接切斷
-            if "<|end_of_text|>" in full_text:
-                full_text = full_text.split("<|end_of_text|>")[0]
-            
-            # 2. 如果出現下一個指令的開頭，直接切斷
-            if "<|begin_of_text|>" in full_text:
-                full_text = full_text.split("<|begin_of_text|>")[1] # 取中間那段
-                if "<|begin_of_text|>" in full_text: # 如果還有第二個
-                     full_text = full_text.split("<|begin_of_text|>")[0]
+            # 切割鬼打牆
+            if "<|end_of_text|>" in full_text: full_text = full_text.split("<|end_of_text|>")[0]
+            if "<|begin_of_text|>" in full_text: full_text = full_text.split("<|begin_of_text|>")[1]
+            if "<|begin_of_text|>" in full_text: full_text = full_text.split("<|begin_of_text|>")[0]
 
-            # 3. 抓取 Output 之後的 JSON
-            if "### Output:" in full_text:
-                generated_text = full_text.split("### Output:")[1].strip()
-            else:
-                generated_text = full_text
+            if "### Output:" in full_text: generated_text = full_text.split("### Output:")[1].strip()
+            else: generated_text = full_text
 
-            # 4. JSON 清洗 (只抓取第一個完整的 {} 物件)
-            # 這是防止後面重複出現 {"核實狀態"...} 的關鍵
+            # JSON 清洗
             start_idx = generated_text.find("{")
-            
-            # 我們利用計數器來找對應的結束括號，而不是用 rfind
-            # 這樣就算後面有重複的 JSON，我們也只會抓第一個
             if start_idx != -1:
                 brace_count = 0
                 end_idx = -1
                 for i, char in enumerate(generated_text[start_idx:], start=start_idx):
-                    if char == "{":
-                        brace_count += 1
+                    if char == "{": brace_count += 1
                     elif char == "}":
                         brace_count -= 1
                         if brace_count == 0:
                             end_idx = i
                             break
-                
-                if end_idx != -1:
-                    generated_text = generated_text[start_idx : end_idx+1]
-                else:
-                    # 萬一沒找到結尾，就用舊方法兜底
-                    generated_text = generated_text[start_idx : generated_text.rfind("}")+1]
+                if end_idx != -1: generated_text = generated_text[start_idx : end_idx+1]
+                else: generated_text = generated_text[start_idx : generated_text.rfind("}")+1]
 
-            print(f"\n🔍 擷取到的最終 JSON: {generated_text[:100]}...") # Debug 用
+            print(f"\n🔍 擷取到的最終 JSON: {generated_text[:100]}...") 
 
             report = json.loads(generated_text)
-            
-            # --- 讀取結果 (保持不變) ---
             risk_level = report.get("風險標記", "MEDIUM")
             
+            # ==========================================
+            # 🟢 [新增] 自動存檔機制 (Auto-Write Back)
+            # ==========================================
+            print(f"💾 正在封存本次申請資料至 MongoDB ({user_name})...")
+            
+            # 1. 建立 Content (人類可讀的銀行存檔格式)
+            archive_content = (
+                f"【銀行內部存檔】\n"
+                f"存檔時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"客戶姓名：{user_name} ({user_id})。\n"
+                f"職業紀錄：任職於「{profile.get('company', '未提供')}」，職稱為「{profile.get('job', '待業')}」。\n"
+                f"財務紀錄：口述月薪 {profile.get('income', 0)} 元。\n"
+                f"查核結果：本次 DVE 查核風險為 {risk_level}。"
+            )
+            
+            # 2. 建立 Metadata (機器可讀，供下次 DVE 使用)
+            # 這裡的 Key 必須跟上面 "Rag Context" 讀取的 Key 對應
+            archive_meta = {
+                "name": user_name,
+                "hist_job": profile.get("job"),
+                "hist_company": profile.get("company"),
+                "hist_income": str(profile.get("income")),
+                "hist_phone": "0910-111-888",         # 暫時寫死，實務應從 profile 抓
+                "hist_purpose": "個人進修",           # 暫時寫死
+                "default_record": "無",               # 新申請假設無違約
+                "inquiry_count": "1",                 # 假設查詢一次
+                "last_risk_level": risk_level
+            }
+            
+            # 3. 寫入資料庫
+            rag_engine.add_document(user_id, archive_content, metadata=archive_meta)
+            print("✅ 資料封存完成！已成為新的歷史紀錄。")
+            # ==========================================
+            
+            # 回傳結果
             if risk_level == "LOW":
                 user_res = "資料驗證無誤，正在為您進行試算。"
                 next_step = "TRANSFER_TO_FRE"
@@ -158,8 +198,6 @@ class DVE_Expert(BaseExpert):
 
         except Exception as e:
             print(f"\n❌ DVE 解析失敗: {e}")
-            # 如果解析失敗，印出原文讓我們除錯
-            # print(f"Raw Text: {full_text}") 
             return {
                 "expert": "DVE (Error)",
                 "response": "系統忙碌中，請稍後。",

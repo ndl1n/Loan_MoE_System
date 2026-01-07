@@ -55,6 +55,7 @@ class DVE_Expert(BaseExpert):
                 "檔案中服務公司名稱": meta.get("hist_company", "無紀錄"),
                 "檔案中年薪/月薪": str(meta.get("hist_income", "0")),
                 "信用報告查詢次數": str(meta.get("inquiry_count", "0")),
+                "地址變動次數": str(meta.get("addr_change_count", "0"))
             }
         else:
             print("⚠️ 新用戶 (無歷史紀錄)")
@@ -66,6 +67,7 @@ class DVE_Expert(BaseExpert):
                 "檔案中服務公司名稱": "無紀錄",
                 "檔案中年薪/月薪": "0",
                 "信用報告查詢次數": "0",
+                "地址變動次數": "0"
             }
 
         # --- 3. 組建 Input JSON (Query vs Context) ---

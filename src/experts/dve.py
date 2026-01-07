@@ -11,7 +11,11 @@ from .base import BaseExpert
 
 class DVE_Expert(BaseExpert):
     """
-    DVE: 資料查核專家 (Read/Write RAG Integrated Version)
+    DVE: 資料查核專家 (Ultimate Robust Version)
+    特色: 
+    1. Regex JSON 提取 (防止字串內括號干擾)
+    2. 自動清洗 Hallucination
+    3. 動態存檔 (修復寫死欄位的 Bug)
     """
     def process(self, task_data, history=[]):
         query = task_data.get("user_query", "")

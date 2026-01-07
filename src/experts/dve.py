@@ -129,33 +129,57 @@ class DVE_Expert(BaseExpert):
         full_text = tokenizer.decode(outputs[0], skip_special_tokens=False) # 改成 False 以便我們偵測特殊符號
         
         try:
-            # 切割鬼打牆
+            # Step A: 粗略切割
             if "<|end_of_text|>" in full_text: full_text = full_text.split("<|end_of_text|>")[0]
-            if "<|begin_of_text|>" in full_text: full_text = full_text.split("<|begin_of_text|>")[1]
-            if "<|begin_of_text|>" in full_text: full_text = full_text.split("<|begin_of_text|>")[0]
-
+            # 切割鬼打牆
+            # if "<|end_of_text|>" in full_text: full_text = full_text.split("<|end_of_text|>")[0]
+            # if "<|begin_of_text|>" in full_text: full_text = full_text.split("<|begin_of_text|>")[1]
+            # if "<|begin_of_text|>" in full_text: full_text = full_text.split("<|begin_of_text|>")[0]
             if "### Output:" in full_text: generated_text = full_text.split("### Output:")[1].strip()
             else: generated_text = full_text
+            
+            # Step B: 清洗已知的怪異 Token
+            generated_text = generated_text.replace("Portály", "")
 
-            # JSON 清洗
-            start_idx = generated_text.find("{")
-            if start_idx != -1:
-                brace_count = 0
-                end_idx = -1
-                for i, char in enumerate(generated_text[start_idx:], start=start_idx):
-                    if char == "{": brace_count += 1
-                    elif char == "}":
-                        brace_count -= 1
-                        if brace_count == 0:
-                            end_idx = i
-                            break
-                if end_idx != -1: generated_text = generated_text[start_idx : end_idx+1]
-                else: generated_text = generated_text[start_idx : generated_text.rfind("}")+1]
+            # Step C: JSON 提取 (優先使用 Regex，它能處理字串內的括號)
+            # 這個 Regex 尋找最外層的 { ... }，re.DOTALL 讓點號匹配換行符
+            match = re.search(r"(\{.*\})", generated_text, re.DOTALL)
+            
+            json_str = ""
+            if match:
+                json_str = match.group(1)
+            else:
+                # Fallback: 如果 Regex 失敗，使用最簡單的 find/rfind
+                # 這種方式比手動計數迴圈更不容易被字串內的符號干擾
+                start_idx = generated_text.find("{")
+                end_idx = generated_text.rfind("}")
+                if start_idx != -1 and end_idx != -1:
+                    json_str = generated_text[start_idx : end_idx+1]
 
-            print(f"\n🔍 擷取到的最終 JSON: {generated_text[:100]}...") 
+            if not json_str:
+                raise ValueError("無法提取 JSON 結構")
 
-            report = json.loads(generated_text)
+            # Step D: JSON 載入與修復嘗試
+            try:
+                report = json.loads(json_str)
+            except json.JSONDecodeError:
+                # 嘗試常見修復：補齊結尾引號 (針對 'Expecting , delimiter' 錯誤)
+                if json_str.count('"') % 2 != 0:
+                    json_str = json_str.replace('"}', '"}') # 嘗試修復
+                # 最後再試一次，失敗就拋出
+                report = json.loads(json_str)
+
+            print(f"\n🔍 最終解析成功 JSON: {str(report)[:100]}...")
+            
+            # --- 讀取結果 ---
+            # 注意：您的測試資料輸出 "MISMATCH_FOUND"，但之前的程式碼只看 "HIGH"
+            # 這裡我們要調整邏輯，讓 MISMATCH_FOUND 對應到 HIGH/MEDIUM  風險
+            check_status = report.get("核實狀態", "UNKNOWN")
             risk_level = report.get("風險標記", "MEDIUM")
+            
+            # 強制邏輯：如果有 MISMATCH_FOUND，風險絕對不可能是 LOW
+            if check_status == "MISMATCH_FOUND" and risk_level == "LOW":
+                 risk_level = "MEDIUM"
             
             # ==========================================
             # 🟢 [優化] 自動存檔機制 (Auto-Write Back)

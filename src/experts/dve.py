@@ -70,18 +70,25 @@ class DVE_Expert(BaseExpert):
                 "地址變動次數": "0"
             }
 
-        # --- 3. 組建 Input JSON (Query vs Context) ---
+        # --- 3. 組建 Input JSON ---
+        # 為了存檔時能拿到正確資料，我們先把變數提取出來
+        q_job = profile.get("job", "待業中")
+        q_purpose = profile.get("purpose", "一般週轉") # 嘗試從 profile 抓，沒有則預設
+        q_phone = profile.get("phone", "09xx-xxx-xxx") # 嘗試從 profile 抓
+        q_company = profile.get("company", "未提供")
+        q_income = str(profile.get("income", "0"))
+
         dve_input_data = {
             "核心識別資訊": {
                 "申請人姓名": user_name,
                 "身分證字號": user_id
             },
             "最新口述資訊 (Query) 擷取": {
-                "職業": profile.get("job", "待業中"),
-                "資金用途": "個人進修", # 範例寫死，實務應從 profile 抓
-                "聯絡電話": "0910-111-888", # 範例寫死，實務應從 profile 抓
-                "服務公司名稱": profile.get("company", "未提供"),
-                "月薪": str(profile.get("income", "0"))
+                "職業": q_job,
+                "資金用途": q_purpose,
+                "聯絡電話": q_phone,
+                "服務公司名稱": q_company,
+                "月薪": q_income
             },
             "RAG 檢索的歷史數據 (Context) 擷取": rag_context
         }
@@ -151,31 +158,28 @@ class DVE_Expert(BaseExpert):
             risk_level = report.get("風險標記", "MEDIUM")
             
             # ==========================================
-            # 🟢 [新增] 自動存檔機制 (Auto-Write Back)
+            # 🟢 [優化] 自動存檔機制 (Auto-Write Back)
             # ==========================================
             print(f"💾 正在封存本次申請資料至 MongoDB ({user_name})...")
-            
-            # 1. 建立 Content (人類可讀的銀行存檔格式)
             archive_content = (
                 f"【銀行內部存檔】\n"
                 f"存檔時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
                 f"客戶姓名：{user_name} ({user_id})。\n"
-                f"職業紀錄：任職於「{profile.get('company', '未提供')}」，職稱為「{profile.get('job', '待業')}」。\n"
-                f"財務紀錄：口述月薪 {profile.get('income', 0)} 元。\n"
+                f"職業紀錄：任職於「{q_company}」，職稱為「{q_job}」。\n"
+                f"財務紀錄：口述月薪 {q_income} 元。\n"
                 f"查核結果：本次 DVE 查核風險為 {risk_level}。"
             )
             
-            # 2. 建立 Metadata (機器可讀，供下次 DVE 使用)
-            # 這裡的 Key 必須跟上面 "Rag Context" 讀取的 Key 對應
+            # Metadata 必須動態寫入
             archive_meta = {
                 "name": user_name,
-                "hist_job": profile.get("job"),
-                "hist_company": profile.get("company"),
-                "hist_income": str(profile.get("income")),
-                "hist_phone": "0910-111-888",         # 暫時寫死，實務應從 profile 抓
-                "hist_purpose": "個人進修",           # 暫時寫死
-                "default_record": "無",               # 新申請假設無違約
-                "inquiry_count": "1",                 # 假設查詢一次
+                "hist_job": q_job,
+                "hist_company": q_company,
+                "hist_income": q_income,
+                "hist_phone": q_phone,       # <--- 現在是動態的了
+                "hist_purpose": q_purpose,   # <--- 現在是動態的了
+                "default_record": "無",      # 新申請假設無違約 (或可保留舊紀錄)
+                "inquiry_count": str(int(rag_context.get("信用報告查詢次數", "0")) + 1), # 查詢次數+1
                 "last_risk_level": risk_level
             }
             

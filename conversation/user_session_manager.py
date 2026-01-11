@@ -184,13 +184,16 @@ class UserSessionManager:
     # Utils / Cleanup
     # -------------------------
     def clear_session(self):
-        """清空該使用者的所有資料 (測試或重置用)"""
+        """清空該使用者的所有資料"""
         try:
             pipe = redis_client.pipeline()
             pipe.delete(self.profile_key)
             pipe.delete(self.history_key)
+            pipe.delete(self.lock_key)
             pipe.execute()
-            logger.info(f"Session cleared for {self.user_id}")
+            
+            logger.info(f"✅ Session cleared for {self.user_id}")
+            
         except Exception as e:
             logger.error(f"Failed to clear session for {self.user_id}: {e}")
 

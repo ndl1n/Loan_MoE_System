@@ -173,9 +173,19 @@ class UserSessionManager:
     def get_history(self, limit: int = 10) -> List[Dict]:
         """取得最近 N 筆對話紀錄"""
         try:
-            # lrange 範圍是包含結尾的，所以是用 -limit 到 -1
+            # Redis lrange 是包含式的,所以用 -limit 到 -1
             msgs = redis_client.lrange(self.history_key, -limit, -1)
-            return [json.loads(m) for m in msgs]
+            
+            result = []
+            for m in msgs:
+                try:
+                    result.append(json.loads(m))
+                except json.JSONDecodeError:
+                    logger.warning(f"Skipping malformed message in history")
+                    continue
+            
+            return result
+            
         except Exception as e:
             logger.error(f"Failed to get history for {self.user_id}: {e}")
             return []

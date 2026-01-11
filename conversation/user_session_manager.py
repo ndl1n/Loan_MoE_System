@@ -140,9 +140,13 @@ class UserSessionManager:
 
     def _init_profile(self):
         """初始化空的 Profile"""
+        import time
+        initial_data = self.DEFAULT_PROFILE.copy()
+        initial_data["created_at"] = time.time()
+        
         self._save_to_redis(
-            self.profile_key, 
-            json.dumps(self.DEFAULT_PROFILE, ensure_ascii=False)
+            self.profile_key,
+            json.dumps(initial_data, ensure_ascii=False)
         )
 
     # -------------------------

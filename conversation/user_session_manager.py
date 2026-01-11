@@ -150,23 +150,38 @@ class UserSessionManager:
     # -------------------------
     def add_message(self, role: str, content: str):
         """
-        新增一條對話紀錄
-        role: 'user' or 'assistant' or 'system'
+        新增對話紀錄
+        
+        改進:
+        - 加入時間戳
+        - 限制歷史長度
         """
-        if not content:
+        if not content or not content.strip():
             return
 
-        msg = json.dumps(
-            {"role": role, "content": content},
-            ensure_ascii=False
-        )
-        
+        import time
+        msg = json.dumps({
+            "role": role,
+            "content": content,
+            "timestamp": time.time()
+        }, ensure_ascii=False)
+
         try:
-            # 使用 Pipeline: 寫入 List + 更新 TTL (一次網路請求完成)
             pipe = redis_client.pipeline()
+            
+            # 新增訊息
             pipe.rpush(self.history_key, msg)
+            
+            # 限制歷史長度 (保留最近 50 則)
+            pipe.ltrim(self.history_key, -50, -1)
+            
+            # 更新 TTL
             pipe.expire(self.history_key, SESSION_TTL)
+            
             pipe.execute()
+            
+            logger.debug(f"[Message Added] {self.user_id} ({role}): {content[:50]}...")
+            
         except Exception as e:
             logger.error(f"Failed to add message for {self.user_id}: {e}")
 

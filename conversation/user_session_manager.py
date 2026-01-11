@@ -17,12 +17,11 @@ load_dotenv()
 # ==========================================
 # ⚙️ Redis Configuration
 # ==========================================
-# Docker 環境下通常 service name 叫做 "redis"，本地開發則用 "localhost"
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None) # 增加密碼支援
-SESSION_TTL = int(os.getenv("SESSION_TTL", 3600))  # 預設 1 小時過期
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+SESSION_TTL = int(os.getenv("SESSION_TTL", 3600))  # 預設 1 小時
 
 # ==========================================
 # 🔌 Redis Connection Pool

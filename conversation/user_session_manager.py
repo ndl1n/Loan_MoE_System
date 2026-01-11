@@ -49,16 +49,20 @@ except redis.exceptions.ConnectionError as e:
 
 
 # ==========================================
-# 👤 User Session Manager
+# 👤 User Session Manager (改善版)
 # ==========================================
 class UserSessionManager:
     """
-    負責管理單一使用者的：
-    1. Profile (貸款申請資料) - JSON String
-    2. Conversation History (對話紀錄) - List of JSON Strings
+    負責管理單一使用者的:
+    1. Profile (貸款申請資料)
+    2. Conversation History (對話紀錄)
+    
+    改進重點:
+    - 更完善的錯誤處理
+    - 更好的 Redis 操作效率
+    - 加入資料一致性檢查
     """
 
-    # 定義預設結構，確保取用時不會 KeyError
     DEFAULT_PROFILE = {
         "name": None,
         "id": None,
@@ -67,18 +71,23 @@ class UserSessionManager:
         "job": None,
         "income": None,
         "amount": None,
-        "last_asked_field": None, # 紀錄機器人上一題問什麼
-        "risk_score": None,       # 未來擴充用
+        "last_asked_field": None,
+        "retry_count": 0,
+        "created_at": None,
+        "updated_at": None
     }
 
     def __init__(self, user_id: str):
         if not user_id:
             raise ValueError("User ID cannot be empty")
         
+        if redis_client is None:
+            raise RuntimeError("Redis connection not available")
+        
         self.user_id = user_id
-        # 使用 namespace 避免 key 衝突
         self.profile_key = f"loan:profile:{user_id}"
         self.history_key = f"loan:history:{user_id}"
+        self.lock_key = f"loan:lock:{user_id}"
 
     # -------------------------
     # Profile Management

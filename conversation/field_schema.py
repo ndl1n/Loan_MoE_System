@@ -26,6 +26,42 @@ class Field:
         self.error_msg = error_msg or f"{name} 格式不正確"
         self.priority = priority  # 數字越小越優先
 
+    def validate(self, value: Any) -> tuple[bool, Optional[str]]:
+        """
+        驗證欄位值
+        回傳: (是否有效, 錯誤訊息)
+        """
+        if value is None:
+            if self.required:
+                return False, f"{self.name} 為必填欄位"
+            return True, None
+
+        # 類型檢查
+        try:
+            if self.type == int:
+                value = int(value)
+            elif self.type == float:
+                value = float(value)
+            elif self.type == str:
+                value = str(value)
+        except (ValueError, TypeError):
+            return False, f"{self.name} 必須是 {self.type.__name__} 類型"
+
+        # 自定義驗證
+        if self.validator:
+            if callable(self.validator):
+                is_valid = self.validator(value)
+                if not is_valid:
+                    return False, self.error_msg
+            elif self.validator == "phone":
+                if not self._validate_phone(value):
+                    return False, "手機號碼格式不正確"
+            elif self.validator == "id":
+                if not self._validate_tw_id(value):
+                    return False, "身分證字號格式不正確"
+
+        return True, None
+
     @staticmethod
     def _validate_phone(phone: str) -> bool:
         """驗證台灣手機號碼"""

@@ -48,3 +48,21 @@ class FieldSchema:
 
     def all_required_filled(self, profile_state):
         return len(self.get_missing_fields(profile_state)) == 0
+
+    def get_validation_errors(self, profile_state: dict) -> dict:
+        """
+        只回傳有錯誤的欄位
+        """
+        all_results = self.validate_all(profile_state)
+        
+        errors = {
+            field: info["error"]
+            for field, info in all_results.items()
+            if not info["valid"]
+        }
+        
+        return errors
+
+    def get_field_info(self, field_name: str) -> Optional[Field]:
+        """取得特定欄位的定義"""
+        return self.fields.get(field_name)

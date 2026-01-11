@@ -26,6 +26,37 @@ class Field:
         self.error_msg = error_msg or f"{name} 格式不正確"
         self.priority = priority  # 數字越小越優先
 
+    @staticmethod
+    def _validate_phone(phone: str) -> bool:
+        """驗證台灣手機號碼"""
+        # 移除所有非數字字元
+        digits = re.sub(r'\D', '', str(phone))
+        
+        # 處理 +886 開頭
+        if digits.startswith('886'):
+            digits = '0' + digits[3:]
+        
+        # 必須是 10 碼且以 09 開頭
+        return len(digits) == 10 and digits.startswith('09')
+
+    @staticmethod
+    def _validate_tw_id(id_str: str) -> bool:
+        """驗證台灣身分證字號"""
+        if not id_str or len(id_str) != 10:
+            return False
+        
+        # 第一碼必須是英文字母
+        if not id_str[0].isalpha():
+            return False
+        
+        # 後面 9 碼必須是數字
+        if not id_str[1:].isdigit():
+            return False
+        
+        # 可以加入更嚴格的檢查碼驗證...
+        return True
+
+
 class FieldSchema:
 
     def __init__(self):

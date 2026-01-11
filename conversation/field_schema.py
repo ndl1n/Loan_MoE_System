@@ -134,7 +134,8 @@ class FieldSchema:
         
         return missing
 
-    def all_required_filled(self, profile_state):
+    def all_required_filled(self, profile_state: dict) -> bool:
+        """檢查是否所有必填欄位都已填寫"""
         return len(self.get_missing_fields(profile_state)) == 0
 
     def get_validation_errors(self, profile_state: dict) -> dict:

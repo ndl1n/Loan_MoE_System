@@ -122,3 +122,45 @@ def parse_tw_amount(amount_str: str) -> Optional[int]:
         logger.warning(f"Failed to parse amount as number: {amount_str}")
         return None
 
+
+def validate_tw_id(id_str: str) -> bool:
+    """
+    驗證台灣身分證字號 (含檢查碼驗證)
+    
+    格式: 1個英文字母 + 9個數字
+    檢查碼演算法: 內政部標準
+    """
+    if not id_str or len(id_str) != 10:
+        return False
+    
+    id_str = id_str.upper()
+    
+    # 檢查格式
+    if not (id_str[0].isalpha() and id_str[1:].isdigit()):
+        return False
+    
+    # 英文字母對應數字表
+    letter_map = {
+        'A': 10, 'B': 11, 'C': 12, 'D': 13, 'E': 14, 'F': 15, 'G': 16,
+        'H': 17, 'I': 34, 'J': 18, 'K': 19, 'L': 20, 'M': 21, 'N': 22,
+        'O': 35, 'P': 23, 'Q': 24, 'R': 25, 'S': 26, 'T': 27, 'U': 28,
+        'V': 29, 'W': 32, 'X': 30, 'Y': 31, 'Z': 33
+    }
+    
+    first_letter = id_str[0]
+    if first_letter not in letter_map:
+        return False
+    
+    # 轉換英文字母為數字
+    letter_num = letter_map[first_letter]
+    d1 = letter_num // 10
+    d2 = letter_num % 10
+    
+    # 計算檢查碼
+    weights = [1, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1]
+    digits = [d1, d2] + [int(d) for d in id_str[1:]]
+    
+    total = sum(d * w for d, w in zip(digits, weights))
+    
+    # 檢查碼驗證
+    return total % 10 == 0

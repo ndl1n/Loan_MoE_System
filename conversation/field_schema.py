@@ -1,9 +1,30 @@
+import re
+from typing import Any, Callable, Optional
+
 class Field:
-    def __init__(self, name, required=True, ftype=str, validator=None):
+    """
+    欄位定義類別
+    
+    改進:
+    - 加入 validator 函數支援
+    - 加入錯誤訊息
+    - 加入優先級設定
+    """
+    def __init__(
+        self,
+        name: str,
+        required: bool = True,
+        ftype: type = str,
+        validator: Optional[Callable] = None,
+        error_msg: str = None,
+        priority: int = 0
+    ):
         self.name = name
         self.required = required
         self.type = ftype
         self.validator = validator
+        self.error_msg = error_msg or f"{name} 格式不正確"
+        self.priority = priority  # 數字越小越優先
 
 class FieldSchema:
 

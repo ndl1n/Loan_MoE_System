@@ -174,6 +174,23 @@ class FieldSchema:
         """檢查是否所有必填欄位都已填寫"""
         return len(self.get_missing_fields(profile_state)) == 0
 
+    def validate_all(self, profile_state: dict) -> dict:
+        """
+        驗證所有欄位
+        回傳: {欄位名: (是否有效, 錯誤訊息)}
+        """
+        results = {}
+        
+        for field_name, field_def in self.fields.items():
+            value = profile_state.get(field_name)
+            is_valid, error_msg = field_def.validate(value)
+            results[field_name] = {
+                "valid": is_valid,
+                "error": error_msg
+            }
+        
+        return results
+
     def get_validation_errors(self, profile_state: dict) -> dict:
         """
         只回傳有錯誤的欄位

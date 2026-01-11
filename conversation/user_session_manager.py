@@ -84,14 +84,29 @@ class UserSessionManager:
     # Profile Management
     # -------------------------
     def get_profile(self) -> Dict:
-        """讀取使用者目前狀態，若無則回傳預設值"""
+        """讀取使用者 profile,若不存在則初始化"""
         try:
             data = redis_client.get(self.profile_key)
+            
             if not data:
-                # 懶加載：第一次讀取時才初始化
+                logger.info(f"[Init Profile] User: {self.user_id}")
                 self._init_profile()
                 return self.DEFAULT_PROFILE.copy()
-            return json.loads(data)
+            
+            profile = json.loads(data)
+            
+            # 確保所有欄位都存在 (防止 schema 更新後缺欄位)
+            for key in self.DEFAULT_PROFILE:
+                if key not in profile:
+                    profile[key] = self.DEFAULT_PROFILE[key]
+            
+            return profile
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Profile JSON decode failed for {self.user_id}: {e}")
+            self._init_profile()  # 重新初始化
+            return self.DEFAULT_PROFILE.copy()
+            
         except Exception as e:
             logger.error(f"Failed to get profile for {self.user_id}: {e}")
             return self.DEFAULT_PROFILE.copy()

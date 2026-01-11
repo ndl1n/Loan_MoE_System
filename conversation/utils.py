@@ -178,3 +178,18 @@ def format_currency(amount: int) -> str:
         return "N/A"
     
     return f"NT$ {amount:,}"
+
+
+def truncate_text(text: str, max_length: int = 50, suffix: str = "...") -> str:
+    """
+    截斷長文字
+    
+    用於 logging 或顯示
+    """
+    if not text:
+        return ""
+    
+    if len(text) <= max_length:
+        return text
+    
+    return text[:max_length - len(suffix)] + suffix

@@ -179,6 +179,24 @@ class UserSessionManager:
         except Exception as e:
             logger.error(f"Failed to clear session for {self.user_id}: {e}")
 
+    def get_session_info(self) -> Dict:
+        """取得 session 基本資訊 (除錯用)"""
+        try:
+            profile_ttl = redis_client.ttl(self.profile_key)
+            history_ttl = redis_client.ttl(self.history_key)
+            history_len = redis_client.llen(self.history_key)
+            
+            return {
+                "user_id": self.user_id,
+                "profile_exists": redis_client.exists(self.profile_key) > 0,
+                "profile_ttl": profile_ttl,
+                "history_length": history_len,
+                "history_ttl": history_ttl
+            }
+        except Exception as e:
+            logger.error(f"Failed to get session info: {e}")
+            return {}
+
     def _save_to_redis(self, key: str, value: str):
         """內部 helper: 寫入並重設 TTL"""
         try:

@@ -3,10 +3,13 @@ import json
 import os
 import logging
 from dotenv import load_dotenv
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 # 設定 Logger
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 load_dotenv()

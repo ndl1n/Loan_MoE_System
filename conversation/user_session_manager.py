@@ -24,7 +24,7 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 SESSION_TTL = int(os.getenv("SESSION_TTL", 3600))  # 預設 1 小時
 
 # ==========================================
-# 🔌 Redis Connection Pool
+# 🔌 Redis Connection Pool (改善版)
 # ==========================================
 try:
     pool = redis.ConnectionPool(
@@ -33,17 +33,19 @@ try:
         db=REDIS_DB,
         password=REDIS_PASSWORD,
         decode_responses=True,
-        socket_timeout=5  # 設定連線超時，避免卡死
+        socket_timeout=5,
+        socket_connect_timeout=5,
+        max_connections=50  # 增加連線池大小
     )
     redis_client = redis.Redis(connection_pool=pool)
     
     # 啟動時測試連線
     redis_client.ping()
-    logger.info(f"✅ Redis connected successfully at {REDIS_HOST}:{REDIS_PORT}")
+    logger.info(f"✅ Redis connected: {REDIS_HOST}:{REDIS_PORT} (DB: {REDIS_DB})")
 
 except redis.exceptions.ConnectionError as e:
     logger.error(f"❌ Redis connection failed: {e}")
-    # 這裡不 raise error，讓程式可以繼續 import，但在呼叫時會爆錯，提醒開發者
+    redis_client = None  # 避免後續呼叫時出錯
 
 
 # ==========================================

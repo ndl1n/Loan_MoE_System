@@ -99,29 +99,44 @@ class UserSessionManager:
     def update_profile(self, updates: Dict) -> Dict:
         """
         更新部分欄位 (Partial Update)
-        Example: updates = {"income": 50000}
+        
+        改進:
+        - 加入時間戳記
+        - 優化寫入邏輯
+        - 更好的錯誤處理
         """
         try:
-            # 1. 先讀取舊資料
+            # 1. 讀取當前 profile
             current_profile = self.get_profile()
 
-            # 2. 合併新資料
+            # 2. 記錄更新時間
+            import time
+            if current_profile.get("created_at") is None:
+                current_profile["created_at"] = time.time()
+            current_profile["updated_at"] = time.time()
+
+            # 3. 合併新資料
             updated = False
             for k, v in updates.items():
-                # 只更新有變動的值
+                # 忽略 None 值 (避免覆蓋已有資料)
+                if v is None:
+                    continue
+                    
                 if current_profile.get(k) != v:
                     current_profile[k] = v
                     updated = True
-            
-            # 3. 如果有變動，才寫入 Redis (節省寫入次數)
+                    logger.info(f"[Profile Update] {self.user_id}: {k} = {v}")
+
+            # 4. 若有變動才寫入
             if updated:
-                self._save_to_redis(self.profile_key, json.dumps(current_profile, ensure_ascii=False))
+                json_data = json.dumps(current_profile, ensure_ascii=False)
+                self._save_to_redis(self.profile_key, json_data)
             
             return current_profile
 
         except Exception as e:
             logger.error(f"Failed to update profile for {self.user_id}: {e}")
-            return self.DEFAULT_PROFILE
+            return self.get_profile()
 
     def _init_profile(self):
         """初始化空的 Profile"""

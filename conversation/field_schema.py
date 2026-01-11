@@ -58,23 +58,80 @@ class Field:
 
 
 class FieldSchema:
+    """
+    欄位 Schema 管理
+    
+    改進:
+    - 加入欄位優先級排序
+    - 加入批次驗證
+    - 更好的缺失欄位邏輯
+    """
 
     def __init__(self):
+        # 定義欄位順序 (priority 越小越優先詢問)
         self.fields = {
-            "name": Field("name"),
-            "id": Field("id"),
-            "phone": Field("phone", validator="phone"),
-            "loan_purpose": Field("loan_purpose"),
-            "job": Field("job"),
-            "income": Field("income", ftype=int),
-            "amount": Field("amount", ftype=int)
+            "name": Field(
+                "name",
+                priority=1,
+                error_msg="請提供您的完整姓名"
+            ),
+            "id": Field(
+                "id",
+                priority=2,
+                validator="id",
+                error_msg="身分證字號格式應為 1 個英文字母 + 9 個數字"
+            ),
+            "phone": Field(
+                "phone",
+                priority=3,
+                validator="phone",
+                error_msg="手機號碼格式應為 09 開頭的 10 碼數字"
+            ),
+            "job": Field(
+                "job",
+                priority=4,
+                error_msg="請提供您的職業或職稱"
+            ),
+            "income": Field(
+                "income",
+                ftype=int,
+                priority=5,
+                validator=lambda x: x > 0,
+                error_msg="月收入必須大於 0"
+            ),
+            "loan_purpose": Field(
+                "loan_purpose",
+                priority=6,
+                error_msg="請說明貸款用途"
+            ),
+            "amount": Field(
+                "amount",
+                ftype=int,
+                priority=7,
+                validator=lambda x: x > 0,
+                error_msg="貸款金額必須大於 0"
+            )
         }
 
-    def get_missing_fields(self, profile_state):
+    def get_missing_fields(self, profile_state: dict) -> list:
+        """
+        取得缺少的必填欄位,並按優先級排序
+        
+        改進: 按 priority 排序,確保問題順序合理
+        """
         missing = []
+        
         for k, field in self.fields.items():
-            if field.required and not profile_state.get(k):
-                missing.append(k)
+            value = profile_state.get(k)
+            
+            # 檢查是否為必填且缺失
+            if field.required:
+                if value is None or value == "":
+                    missing.append(k)
+        
+        # 按照優先級排序
+        missing.sort(key=lambda x: self.fields[x].priority)
+        
         return missing
 
     def all_required_filled(self, profile_state):

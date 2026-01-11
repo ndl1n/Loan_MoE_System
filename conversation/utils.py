@@ -164,3 +164,17 @@ def validate_tw_id(id_str: str) -> bool:
     
     # 檢查碼驗證
     return total % 10 == 0
+
+
+def format_currency(amount: int) -> str:
+    """
+    格式化金額為台幣表示
+    
+    範例:
+    - 50000 → "NT$ 50,000"
+    - 1000000 → "NT$ 1,000,000"
+    """
+    if amount is None:
+        return "N/A"
+    
+    return f"NT$ {amount:,}"

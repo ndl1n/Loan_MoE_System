@@ -232,5 +232,7 @@ class UserSessionManager:
             pipe.set(key, value)
             pipe.expire(key, SESSION_TTL)
             pipe.execute()
+            
         except Exception as e:
             logger.error(f"Redis write failed for {key}: {e}")
+            raise  # 往上拋出,讓呼叫方知道寫入失敗

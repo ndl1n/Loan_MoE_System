@@ -7,7 +7,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.config import GEMINI_API_KEY, GEMINI_MODEL_NAME
+from config import GEMINI_API_KEY, GEMINI_MODEL_NAME
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 logger = logging.getLogger(__name__)

@@ -14,6 +14,7 @@ __pycache__/
 *.pth
 models/
 outputs/
+data/
 
 # --- 忽略 OS 產生的雜檔 ---
 .DS_Store

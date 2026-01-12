@@ -9,7 +9,7 @@ class LDE_Expert(BaseExpert):
     """
     LDE: 貸款徵審專家 (Loan Default Expert)
     Mode A: Local LLM (諮詢)
-    Mode B: OpenAI (資料萃取)
+    Mode B: Gemini（資料抽取與引導）
     """
     def process(self, task_data, history=[]):
         query = task_data.get("user_query", "")

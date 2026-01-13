@@ -146,7 +146,7 @@ class MoERouter:
     def _lazy_load_gatekeeper(self):
         """延遲載入 GateKeeper"""
         if self.gatekeeper is None:
-            from moe.gating_engine import MoEGateKeeper
+            from .gating_engine import MoEGateKeeper
             self.gatekeeper = MoEGateKeeper()
     
     def route(

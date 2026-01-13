@@ -10,18 +10,20 @@ class ProfileAdapter:
     
     關鍵映射:
     - loan_purpose (對話) → purpose (MoE)
-    - 其他欄位名稱相同
     """
     
     # 對話欄位 → MoE 訓練欄位的映射
     FIELD_MAPPING = {
         "name": "name",
         "id": "id",
-        "phone": "phone",           # MoE 訓練資料沒有,但保留
+        "phone": "phone",
         "job": "job",
         "income": "income",
-        "loan_purpose": "purpose",  # ⚠️ 這是關鍵映射!
-        "amount": "amount"
+        "loan_purpose": "purpose",  # ⚠️ 關鍵映射
+        "purpose": "purpose",       # 兼容直接使用 purpose
+        "amount": "amount",
+        "company": "company",
+        "verification_status": "verification_status"  # 新增: 狀態也需要傳遞
     }
     
     # MoE 必須的欄位 (根據訓練資料)

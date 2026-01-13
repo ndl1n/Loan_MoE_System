@@ -72,8 +72,7 @@ class RAGService:
         if not text or self._encoder is None:
             return []
         
-        # sentence-transformers 回傳 numpy array,轉成 list 才能存 MongoDB
-        return self.encoder.encode(text).tolist()
+        return self._encoder.encode(text).tolist()
 
     def add_document(
         self, 
@@ -90,12 +89,16 @@ class RAGService:
             metadata: 額外資訊 (dict)
         
         Returns:
-            ObjectId: 插入的文件 ID
+            ObjectId: 插入的文件 ID，失敗則回傳 None
         """
         self._lazy_init()
         
         if metadata is None:
             metadata = {}
+        
+        if self._collection is None:
+            logger.error("MongoDB 未連線，無法新增文件")
+            return None
         
         vector = self.get_embedding(content)
         
@@ -104,15 +107,18 @@ class RAGService:
             "content": content,
             "embedding": vector,
             "metadata": metadata,
-            "created_at": str(os.times())
+            "created_at": time.time()
         }
         
-        result = self.collection.insert_one(doc)
-        logger.info(f"💾 資料已存入 MongoDB (ID: {result.inserted_id})")
-        
-        return result.inserted_id
+        try:
+            result = self._collection.insert_one(doc)
+            logger.info(f"💾 資料已存入 MongoDB (ID: {result.inserted_id})")
+            return str(result.inserted_id)
+        except Exception as e:
+            logger.error(f"❌ MongoDB 寫入失敗: {e}")
+            return None
 
-    def vector_search(self, query_text, top_k=3):
+    def vector_search(self, query_text: str, top_k: int = 3) -> List[Dict]:
         """
         RAG 核心 - 語意搜尋
         根據 Query 找出最相似的歷史紀錄
@@ -126,13 +132,20 @@ class RAGService:
         """
         self._lazy_init()
         
+        if self._collection is None or self._encoder is None:
+            logger.warning("RAG 服務未就緒，返回空結果")
+            return []
+        
         query_vector = self.get_embedding(query_text)
+        
+        if not query_vector:
+            return []
         
         # MongoDB Atlas Vector Search Pipeline
         pipeline = [
             {
                 "$vectorSearch": {
-                    "index": "vector_index",      # ⚠️ 請確保在 Atlas 建立此索引
+                    "index": "vector_index",
                     "path": "embedding",
                     "queryVector": query_vector,
                     "numCandidates": 100,
@@ -150,20 +163,19 @@ class RAGService:
         ]
         
         try:
-            results = list(self.collection.aggregate(pipeline))
-            logger.info(f"🔍 Vector Search 完成,找到 {len(results)} 筆結果")
+            results = list(self._collection.aggregate(pipeline))
+            logger.info(f"🔍 Vector Search 完成，找到 {len(results)} 筆結果")
             return results
             
         except Exception as e:
-            logger.warning(f"⚠️  Vector Search 失敗 (可能索引未建立): {e}")
-            # Fallback: 回傳空陣列
+            logger.warning(f"⚠️ Vector Search 失敗 (可能索引未建立): {e}")
             return []
 
     def get_user_history_by_id(self, user_id: str) -> List[Dict]:
         """
         精準檢索 - 根據 User ID 撈出該用戶的所有歷史資料
         
-        這對 DVE 查核最重要,因為我們要比對的是「這個人」的歷史
+        這對 DVE 查核最重要，因為我們要比對的是「這個人」的歷史
         
         Args:
             user_id: 使用者 ID
@@ -171,15 +183,11 @@ class RAGService:
         Returns:
             list: 該用戶的所有歷史紀錄
         """
-        results = list(
-            self.collection.find(
-                {"user_id": user_id},
-                {"_id": 0, "embedding": 0}  # 不回傳 _id 和 embedding
-            )
-        )
         self._lazy_init()
         
-        logger.info(f"📂 找到 {len(results)} 筆歷史紀錄 (User: {user_id})")
+        if self._collection is None:
+            logger.warning("MongoDB 未連線，返回空歷史")
+            return []
         
         return results
 

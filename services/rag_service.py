@@ -23,13 +23,13 @@ class RAGService:
     - 精準檢索 (根據 User ID)
     """
     
-    def __init__(self, collection_name="user_history"):
-        self.collection = mongo_db.get_collection(collection_name)
+    def __init__(self, collection_name: str = "user_history"):
+        self.collection_name = collection_name
+        self._collection = None
+        self._encoder = None
         
-        # 載入輕量的 embedding 模型 (約 90MB)
-        logger.info("📥 正在載入 Embedding 模型 (all-MiniLM-L6-v2)...")
-        self.encoder = SentenceTransformer('all-MiniLM-L6-v2')
-        logger.info("✅ Embedding 模型載入完成")
+        # 延遲載入
+        self._initialized = False
 
     def get_embedding(self, text):
     def _lazy_init(self):

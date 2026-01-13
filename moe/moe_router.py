@@ -183,8 +183,9 @@ class MoERouter:
             }
         
         # === 3. 推斷 verification_status ===
+        # 修正: 從原始 profile 取得狀態 (adapt 後也會保留)
         verification_status = VerificationStatusManager.infer_status(
-            profile, 
+            profile,  # 使用原始 profile
             is_collection_complete
         )
         

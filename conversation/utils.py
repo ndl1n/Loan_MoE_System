@@ -4,6 +4,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+
 def normalize_tw_phone(raw: str) -> Optional[str]:
     """
     正規化台灣手機號碼
@@ -16,10 +17,6 @@ def normalize_tw_phone(raw: str) -> Optional[str]:
     - +886-912-345-678
     
     回傳: 0912-345-678 或 None
-    
-    改進:
-    - 更詳細的驗證
-    - 加入 logging
     """
     if not raw:
         return None
@@ -58,21 +55,14 @@ def parse_tw_amount(amount_str: str) -> Optional[int]:
     - "100k" → 100000
     - "1.5M" → 1500000
     - "3,000,000" → 3000000
-    
-    改進:
-    - 更完整的格式支援
-    - 錯誤處理
     """
     if not amount_str:
         return None
     
-    # 如果已經是數字,直接回傳
     if isinstance(amount_str, (int, float)):
         return int(amount_str)
     
     amount_str = str(amount_str).strip()
-    
-    # 移除空格和逗號
     amount_str = amount_str.replace(',', '').replace(' ', '')
     
     # 處理「萬」
@@ -105,7 +95,7 @@ def parse_tw_amount(amount_str: str) -> Optional[int]:
             logger.warning(f"Failed to parse amount with m: {amount_str}")
             return None
     
-    # 處理「億」(台灣也常用)
+    # 處理「億」
     if '億' in amount_str:
         try:
             num = re.findall(r'[\d.]+', amount_str)
@@ -128,14 +118,12 @@ def validate_tw_id(id_str: str) -> bool:
     驗證台灣身分證字號 (含檢查碼驗證)
     
     格式: 1個英文字母 + 9個數字
-    檢查碼演算法: 內政部標準
     """
     if not id_str or len(id_str) != 10:
         return False
     
     id_str = id_str.upper()
     
-    # 檢查格式
     if not (id_str[0].isalpha() and id_str[1:].isdigit()):
         return False
     
@@ -151,45 +139,29 @@ def validate_tw_id(id_str: str) -> bool:
     if first_letter not in letter_map:
         return False
     
-    # 轉換英文字母為數字
     letter_num = letter_map[first_letter]
     d1 = letter_num // 10
     d2 = letter_num % 10
     
-    # 計算檢查碼
     weights = [1, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1]
     digits = [d1, d2] + [int(d) for d in id_str[1:]]
     
     total = sum(d * w for d, w in zip(digits, weights))
     
-    # 檢查碼驗證
     return total % 10 == 0
 
 
 def format_currency(amount: int) -> str:
-    """
-    格式化金額為台幣表示
-    
-    範例:
-    - 50000 → "NT$ 50,000"
-    - 1000000 → "NT$ 1,000,000"
-    """
+    """格式化金額為台幣表示"""
     if amount is None:
         return "N/A"
-    
     return f"NT$ {amount:,}"
 
 
 def truncate_text(text: str, max_length: int = 50, suffix: str = "...") -> str:
-    """
-    截斷長文字
-    
-    用於 logging 或顯示
-    """
+    """截斷長文字"""
     if not text:
         return ""
-    
     if len(text) <= max_length:
         return text
-    
     return text[:max_length - len(suffix)] + suffix

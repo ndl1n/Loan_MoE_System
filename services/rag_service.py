@@ -67,7 +67,9 @@ class RAGService:
         Returns:
             list: 向量 (384 維)
         """
-        if not text:
+        self._lazy_init()
+        
+        if not text or self._encoder is None:
             return []
         
         # sentence-transformers 回傳 numpy array,轉成 list 才能存 MongoDB
@@ -90,6 +92,11 @@ class RAGService:
         Returns:
             ObjectId: 插入的文件 ID
         """
+        self._lazy_init()
+        
+        if metadata is None:
+            metadata = {}
+        
         vector = self.get_embedding(content)
         
         doc = {
@@ -117,6 +124,8 @@ class RAGService:
         Returns:
             list: 相似文件列表
         """
+        self._lazy_init()
+        
         query_vector = self.get_embedding(query_text)
         
         # MongoDB Atlas Vector Search Pipeline
@@ -168,6 +177,7 @@ class RAGService:
                 {"_id": 0, "embedding": 0}  # 不回傳 _id 和 embedding
             )
         )
+        self._lazy_init()
         
         logger.info(f"📂 找到 {len(results)} 筆歷史紀錄 (User: {user_id})")
         

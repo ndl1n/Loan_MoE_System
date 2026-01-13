@@ -2,11 +2,13 @@ import torch
 import torch.nn as nn
 from transformers import DistilBertModel
 
+
 class StateFirstGatingModel(nn.Module):
     """
     狀態優先 (State-First) 混合神經網路架構
     特徵重組機制：壓縮語意特徵，擴張狀態特徵。
     """
+    
     def __init__(self, n_classes: int, struct_dim: int = 7):
         super(StateFirstGatingModel, self).__init__()
         
@@ -26,7 +28,7 @@ class StateFirstGatingModel(nn.Module):
         # 目的：將 7 維結構化特徵擴張至 128 維，使其成為決策主導力量
         self.struct_net = nn.Sequential(
             nn.Linear(struct_dim, 64),
-            nn.BatchNorm1d(64), # 增加 Batch Norm 提升數值穩定性
+            nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU(),
@@ -41,18 +43,33 @@ class StateFirstGatingModel(nn.Module):
             nn.Linear(64, n_classes) 
         )
 
-    def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, struct_features: torch.Tensor):
+    def forward(
+        self, 
+        input_ids: torch.Tensor, 
+        attention_mask: torch.Tensor, 
+        struct_features: torch.Tensor
+    ):
+        """
+        前向傳播
+        
+        Args:
+            input_ids: BERT input IDs
+            attention_mask: BERT attention mask
+            struct_features: 結構化特徵 (7 維)
+        
+        Returns:
+            logits: 分類結果
+        """
         # --- 處理文字特徵 ---
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        # 取 [CLS] token 或第一個 token 代表整句語意
+        # 取 [CLS] token 代表整句語意
         pooled_output = bert_output.last_hidden_state[:, 0] 
-        text_embed = self.text_compressor(pooled_output) # Output: (batch, 32)
+        text_embed = self.text_compressor(pooled_output)  # Output: (batch, 32)
         
         # --- 處理結構化特徵 ---
         struct_embed = self.struct_net(struct_features)  # Output: (batch, 128)
         
         # --- 特徵融合與分類 ---
-        # 在維度 1 拼接： (batch, 32+128)
         combined = torch.cat((text_embed, struct_embed), dim=1)
         output = self.classifier(combined)
         

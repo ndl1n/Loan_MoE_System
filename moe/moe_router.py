@@ -68,7 +68,7 @@ class ProfileAdapter:
         is_valid = len(missing) == 0
         
         if not is_valid:
-            logger.warning(f"Profile 驗證失敗,缺少: {missing}")
+            logger.warning(f"Profile 驗證失敗，缺少: {missing}")
         
         return is_valid, missing
 
@@ -122,10 +122,15 @@ class VerificationStatusManager:
         """
         if new_status not in VerificationStatusManager.VALID_STATUSES:
             logger.error(f"無效的狀態: {new_status}")
-            return
+            return False
         
-        session_mgr.update_profile({"verification_status": new_status})
-        logger.info(f"✅ 更新 verification_status → {new_status}")
+        try:
+            session_mgr.update_profile({"verification_status": new_status})
+            logger.info(f"✅ 更新 verification_status → {new_status}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ 更新狀態失敗: {e}")
+            return False
 
 
 class MoERouter:
@@ -171,9 +176,7 @@ class MoERouter:
         is_valid, missing = ProfileAdapter.validate_for_moe(adapted_profile)
         
         if not is_valid:
-            logger.warning(f"⚠️  Profile 不完整,缺少: {missing}")
-            # 不完整的資料應該留在對話階段,不進 MoE
-            # 但如果強制進來了,導向 LDE
+            logger.warning(f"⚠️ Profile 不完整，缺少: {missing}")
             return "LDE", 1.0, f"Missing fields: {missing}", {
                 "missing_fields": missing,
                 "verification_status": "unknown"

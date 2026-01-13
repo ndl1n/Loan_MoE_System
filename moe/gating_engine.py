@@ -42,7 +42,7 @@ class MoEGateKeeper:
         else:
             raise FileNotFoundError(
                 f"❌ 找不到模型權重檔: {MODEL_PATH}\n"
-                f"請確認已將 .pth 檔案放入 models 資料夾。"
+                f"請確認已將 .pth 檔案放入 moe/models 資料夾。"
             )
 
     def calculate_risk_score(self, profile: Dict) -> float:
@@ -60,20 +60,17 @@ class MoEGateKeeper:
         """
         
         job = str(profile.get("job", "")).lower()
-        income = profile.get("income", 0)
+        income = profile.get("income", 0) or 0
         purpose = str(profile.get("purpose", "")).lower()
-        amount = profile.get("amount", 0)
+        amount = profile.get("amount", 0) or 0
         
         # === 維度 1: 職業風險 (40% 權重) ===
         job_risk = 0.5
         
-        # 根據訓練資料的職業分布
-        # 高風險職業
         high_risk_jobs = [
             "自由業", "無業", "待業", "臨時工", "打零工",
             "攤販", "家管", "學生", "兼職"
         ]
-        # 低風險職業
         low_risk_jobs = [
             "公務員", "教師", "醫師", "律師", "會計師",
             "工程師", "主管", "經理", "金融", "科技"
@@ -107,14 +104,8 @@ class MoEGateKeeper:
         # === 維度 3: 貸款用途風險 (20% 權重) ===
         purpose_risk = 0.5
         
-        # 低風險用途
-        low_risk_purposes = [
-            "房屋", "購屋", "頭期款", "教育", "醫療", "創業"
-        ]
-        # 中高風險用途
-        high_risk_purposes = [
-            "投資", "債務整合", "週轉", "其他"
-        ]
+        low_risk_purposes = ["房屋", "購屋", "頭期款", "教育", "醫療", "創業"]
+        high_risk_purposes = ["投資", "債務整合", "週轉", "其他"]
         
         for kw in low_risk_purposes:
             if kw in purpose:
@@ -130,8 +121,7 @@ class MoEGateKeeper:
         dti_risk = 0.5
         
         if income > 0 and amount > 0:
-            # 假設 5 年期,月還款
-            monthly_payment = amount / 60
+            monthly_payment = amount / 60  # 假設 5 年期
             dti = monthly_payment / income
             
             if dti > 0.5:
@@ -257,32 +247,23 @@ class MoEGateKeeper:
             )
             
             # === 準備結構特徵 (7 維) ===
-            # 根據訓練時的特徵工程
-            
-            # 1. 欄位存在性
             has_id = 1.0 if profile.get("id") else 0.0
             has_name = 1.0 if profile.get("name") else 0.0
             has_job = 1.0 if profile.get("job") else 0.0
             has_income = 1.0 if profile.get("income") else 0.0
             
-            # 2. 狀態值
             status_val = STATUS_MAP.get(status_str, 0)
             
-            # 3. 資料完整度
             all_fields = ["name", "id", "job", "income", "purpose", "amount"]
             filled = sum(1 for f in all_fields if profile.get(f) is not None)
             sparsity = filled / len(all_fields)
             
-            # 4. 風險分數
-            # 已經計算好了
-            
-            # 組裝特徵向量
             struct_features = torch.tensor([
                 has_id,
                 has_name,
                 has_job,
                 has_income,
-                status_val / 4.0,  # 正規化 (0~4 → 0~1)
+                status_val / 4.0,
                 sparsity,
                 risk_score
             ], dtype=torch.float).unsqueeze(0).to(DEVICE)

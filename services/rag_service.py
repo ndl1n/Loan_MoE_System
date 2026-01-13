@@ -5,12 +5,10 @@ RAG 服務
 
 import os
 import logging
-from sentence_transformers import SentenceTransformer
+import time
+from typing import Dict, List, Optional
 
-import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from services.database import mongo_db
+from .database import mongo_db
 
 logger = logging.getLogger(__name__)
 

@@ -129,14 +129,28 @@ To be edited...
 
 ## 🛠 Tech Stack
 
-| Category | Technologies |
-| :--- | :--- |
-| **Core Framework** | Python 3.10, PyTorch |
-| **LLM & Fine-tuning** | Hugging Face Transformers, PEFT (LoRA), Unsloth (Optimization) |
-| **Architecture** | Mixture of Experts (MoE), RAG (Retrieval-Augmented Generation) |
-| **Backend & API** | Flask (Planned), Redis (State Management) |
-| **Environment** | Docker, WSL2 (Ubuntu), NVIDIA CUDA |
-| **Tools** | Git, SourceTree, Google Colab (Training), Kaggle (Training) |
+| Category | Technology | Purpose |
+|----------|------------|---------|
+| **Language** | Python 3.10+ | Core runtime |
+| **Deep Learning** | PyTorch 2.0+ | Model training & inference |
+| **LLM Framework** | Hugging Face Transformers | Model loading & tokenization |
+| **Fine-tuning** | PEFT (LoRA) | Parameter-efficient fine-tuning |
+| **Optimization** | Unsloth, bitsandbytes | 4-bit quantization, faster training |
+| **Embeddings** | sentence-transformers | Semantic similarity for RAG |
+| **LLM API** | Google Gemini | Slot extraction, fallback generation |
+| **Vector DB** | MongoDB Atlas | Vector search for RAG |
+| **Cache** | Redis | Session state management |
+| **Testing** | pytest | Unit, integration, E2E tests |
+| **Environment** | Docker, WSL2 | Containerization |
+
+### Model Specifications
+
+| Model | Base | Parameters | Quantization | VRAM |
+|-------|------|------------|--------------|------|
+| Gating Network | bert-base-chinese | 102M | None | ~400MB |
+| LDE Adapter | LLaMA-3.1-8B | 8B (LoRA: 4M) | 4-bit | ~6GB |
+| DVE Adapter | LLaMA-3.1-8B | 8B (LoRA: 4M) | 4-bit | ~6GB |
+| FRE Adapter | LLaMA-3.1-8B | 8B (LoRA: 4M) | 4-bit | ~6GB |
 
 ---
 

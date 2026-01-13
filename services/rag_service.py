@@ -32,6 +32,32 @@ class RAGService:
         logger.info("✅ Embedding 模型載入完成")
 
     def get_embedding(self, text):
+    def _lazy_init(self):
+        """延遲初始化 (避免啟動時就載入大模型)"""
+        if self._initialized:
+            return
+            
+        # 取得 MongoDB Collection
+        self._collection = mongo_db.get_collection(self.collection_name)
+        
+        if self._collection is None:
+            logger.warning("⚠️ MongoDB 未連線，RAG 功能將受限")
+        
+        # 載入 Embedding 模型
+        try:
+            from sentence_transformers import SentenceTransformer
+            logger.info("📥 正在載入 Embedding 模型 (all-MiniLM-L6-v2)...")
+            self._encoder = SentenceTransformer('all-MiniLM-L6-v2')
+            logger.info("✅ Embedding 模型載入完成")
+        except ImportError:
+            logger.warning("⚠️ sentence-transformers 未安裝，向量搜尋功能將無法使用")
+            self._encoder = None
+        except Exception as e:
+            logger.error(f"❌ Embedding 模型載入失敗: {e}")
+            self._encoder = None
+        
+        self._initialized = True
+
         """
         將文字轉為向量 (List of floats)
         

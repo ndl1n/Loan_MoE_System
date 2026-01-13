@@ -231,7 +231,7 @@ class MoEGateKeeper:
         profile: Dict,
         status_str: str,
         risk_score: float
-    ) -> tuple:
+    ) -> Tuple[str, float, str]:
         """
         AI 模型推理
         """

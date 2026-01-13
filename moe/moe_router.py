@@ -43,9 +43,10 @@ class ProfileAdapter:
         for conv_field, moe_field in ProfileAdapter.FIELD_MAPPING.items():
             value = conversation_profile.get(conv_field)
             
-            # 保留所有非 None 的值
             if value is not None:
-                adapted[moe_field] = value
+                # 避免重複覆蓋 (例如 loan_purpose 和 purpose 都存在時)
+                if moe_field not in adapted or adapted[moe_field] is None:
+                    adapted[moe_field] = value
         
         logger.debug(f"欄位適配: {conversation_profile} → {adapted}")
         

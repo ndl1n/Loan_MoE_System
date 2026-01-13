@@ -37,10 +37,13 @@ class MongoManager:
     def _initialize(cls):
         """初始化 MongoDB 連線"""
         uri = os.getenv("MONGODB_URI")
-        db_name = os.getenv("DB_NAME", "loan_system")
+        db_name = os.getenv("DB_NAME", "MoE-Finance")
         
         if not uri:
-            raise ValueError("❌ 錯誤: 未設定 MONGODB_URI 環境變數")
+            logger.warning("⚠️ 未設定 MONGODB_URI，MongoDB 功能將無法使用")
+            cls._client = None
+            cls._db = None
+            return
 
         try:
             logger.info(f"🔌 正在連接 MongoDB Atlas...")

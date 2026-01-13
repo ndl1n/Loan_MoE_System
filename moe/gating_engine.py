@@ -1,10 +1,13 @@
 import torch
-import numpy as np
 import logging
 import os
 from typing import Dict, Tuple
 from transformers import DistilBertTokenizer
-from .config import *
+
+from .config import (
+    DEVICE, MODEL_PATH, STRUCT_DIM, MAX_LEN,
+    ID2LABEL, STATUS_MAP, CONFIDENCE_THRESHOLD
+)
 from .model_arch import StateFirstGatingModel
 
 logger = logging.getLogger(__name__)

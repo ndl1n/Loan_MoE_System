@@ -161,20 +161,13 @@ class MoEGateKeeper:
         
         return risk_score
 
-    def predict(self, json_input: Dict) -> tuple:
+    def predict(self, json_input: Dict) -> Tuple[str, float, str]:
         """
         預測路由目標
         
         Args:
             json_input: {
-                "profile_state": {
-                    "name": "王小明",
-                    "id": "A123456789",  # 可以是 null
-                    "job": "工程師",
-                    "income": 70000,
-                    "purpose": "購車",
-                    "amount": 500000
-                },
+                "profile_state": {...},
                 "verification_status": "unknown|pending|verified|mismatch",
                 "user_query": "當前使用者問題"
             }
@@ -338,15 +331,9 @@ class MoEGateKeeper:
         profile: Dict,
         status_str: str,
         risk_score: float
-    ) -> tuple:
+    ) -> Tuple[str, float, str]:
         """
         規則式 Fallback
-        
-        根據訓練資料的標籤分布:
-        - unknown → LDE
-        - pending → DVE (大部分情況)
-        - verified → FRE
-        - mismatch → LDE
         """
         
         logger.info("🔧 使用規則式 Fallback")

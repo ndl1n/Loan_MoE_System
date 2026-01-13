@@ -92,11 +92,13 @@ GENERATION_CONFIG = {
 }
 
 # ==========================================
-# ⚖️ 訓練參數 (如果需要)
+# ⚖️ 訓練參數 (Lazy Loading)
 # ==========================================
 
-# 針對 LDE, DVE, FRE 的加權損失
-LOSS_WEIGHTS = torch.tensor([1.0, 2.5, 2.5]).to(DEVICE)
+# 改為函數，避免 import 時就執行 .to(DEVICE)
+def get_loss_weights():
+    """取得損失權重 (Lazy Loading)"""
+    return torch.tensor([1.0, 2.5, 2.5]).to(DEVICE)
 
 # ==========================================
 # 🛡️ 風險關鍵字

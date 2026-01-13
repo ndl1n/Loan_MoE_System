@@ -54,13 +54,19 @@ class MongoManager:
             
         except ConnectionFailure as e:
             logger.error(f"❌ MongoDB 連線失敗: {e}")
-            raise e
+            cls._client = None
+            cls._db = None
 
-    def get_collection(self, collection_name):
+    def get_collection(self, collection_name: str):
         """取得指定的 Collection"""
         if self._db is None:
-            self._initialize()
+            logger.error("MongoDB 未連線，無法取得 Collection")
+            return None
         return self._db[collection_name]
+    
+    def is_connected(self) -> bool:
+        """檢查是否已連線"""
+        return self._client is not None and self._db is not None
     
     def close(self):
         """關閉連線"""

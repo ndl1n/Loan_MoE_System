@@ -1,38 +1,46 @@
+"""
+Gemini Client
+使用 Gemini API 進行欄位抽取和問題生成
+"""
+
 import json
 import logging
 import re
 from google import genai
+
 import sys
 import os
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import GEMINI_API_KEY, GEMINI_MODEL_NAME
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 logger = logging.getLogger(__name__)
 
+
 class GeminiClient:
+    """Gemini API 客戶端"""
+    
     def __init__(self):
         self.model = client.models
         self.logger = logger
 
-    def ask_question(self, field_name, variant="standard"):
+    def ask_question(self, field_name: str, variant: str = "standard") -> str:
         """
-        根據欄位產生問句,支援不同語氣變體
+        根據欄位產生問句，支援不同語氣變體
         """
         prompts = {
             "name": {
                 "standard": "請問您的姓名是?",
-                "retry": "不好意思,我需要確認您的完整姓名,請問該怎麼稱呼您?"
+                "retry": "不好意思，我需要確認您的完整姓名，請問該怎麼稱呼您?"
             },
             "id": {
                 "standard": "請問您的身分證字號是?",
-                "retry": "身分證字號格式似乎不太對,請您再確認一下(例如 A123456789):"
+                "retry": "身分證字號格式似乎不太對，請您再確認一下(例如 A123456789):"
             },
             "phone": {
                 "standard": "請問您的手機號碼是?",
-                "retry": "手機號碼需要是 09 開頭的 10 碼數字,請您再提供一次:"
+                "retry": "手機號碼需要是 09 開頭的 10 碼數字，請您再提供一次:"
             },
             "loan_purpose": {
                 "standard": "請問您本次貸款的主要用途是?(例如:投資、購車、周轉)",
@@ -44,7 +52,7 @@ class GeminiClient:
             },
             "income": {
                 "standard": "請問您每月大約收入是多少?(請以新台幣計算)",
-                "retry": "不好意思,我們需要一個具體的數字來評估額度,請問月薪大約是多少元?"
+                "retry": "不好意思，我們需要一個具體的數字來評估額度，請問月薪大約是多少元?"
             },
             "amount": {
                 "standard": "請問您希望申請的貸款金額是多少?(請以新台幣計算)",
@@ -55,28 +63,24 @@ class GeminiClient:
         field_prompts = prompts.get(field_name, {})
         return field_prompts.get(variant, field_prompts.get("standard", f"請提供 {field_name}"))
 
-    def extract_slots(self, user_input, missing_fields, history=[]):
+    def extract_slots(self, user_input: str, missing_fields: list, history: list = None) -> dict:
         """
-        從對話中抽取欄位,需考慮 history 上下文
-        
-        改進重點:
-        1. 更清楚的 prompt engineering
-        2. 加入金額單位轉換邏輯
-        3. 更穩健的 JSON 解析
-        4. 特別處理第一輪對話
+        從對話中抽取欄位，需考慮 history 上下文
         """
+        if history is None:
+            history = []
+            
         if not missing_fields:
             return {}
 
         # === 構建對話歷史文字 ===
         history_text = ""
-        last_question = None  # 記錄最後一個問題
+        last_question = None
         
-        for msg in history[-6:]:  # 只取最近 6 輪對話
+        for msg in history[-6:]:
             role = "User" if msg["role"] == "user" else "Assistant"
             history_text += f"{role}: {msg['content']}\n"
             
-            # 記錄機器人最後問的問題
             if msg["role"] == "assistant" and "?" in msg["content"]:
                 last_question = msg["content"]
 
@@ -96,17 +100,14 @@ class GeminiClient:
             for field in missing_fields
         ])
 
-        # === 判斷是否為第一輪對話 ===
         is_first_turn = len(history) <= 1
         
-        # === 構建情境提示 ===
         context_hint = ""
         if last_question:
             context_hint = f"\n【上一個問題】\nAssistant 剛問: {last_question}"
         elif is_first_turn:
             context_hint = "\n【特別注意】這是對話的第一輪,使用者可能直接提供資訊而不是在回答問題。"
 
-        # === 改進的 Prompt ===
         prompt = f"""你是一個專業的資訊擷取助手。
 
 【對話歷史】
@@ -170,11 +171,10 @@ Input: "A123456789" (上一題問身分證)
             raw_output = response.text.strip()
             self.logger.info(f"🔍 [Gemini Raw Output]: {raw_output}")
             
-            # === 清理並解析 JSON ===
             json_str = self._extract_json(raw_output)
             extracted = json.loads(json_str)
             
-            # === 後處理: 確保金額轉換正確 ===
+            # 後處理: 確保金額轉換正確
             if "income" in extracted:
                 extracted["income"] = self._parse_amount(str(extracted["income"]))
             if "amount" in extracted:
@@ -189,18 +189,11 @@ Input: "A123456789" (上一題問身分證)
             self.logger.error(f"Slot extraction failed: {e}")
             return {}
 
-    def _extract_json(self, text):
-        """
-        從 Gemini 回應中提取 JSON
-        處理常見格式問題:
-        - Markdown code block
-        - 多餘的說明文字
-        """
-        # 移除 Markdown code block
+    def _extract_json(self, text: str) -> str:
+        """從 Gemini 回應中提取 JSON"""
         text = re.sub(r'```json\s*', '', text)
         text = re.sub(r'```\s*', '', text)
         
-        # 嘗試找到第一個 { 和最後一個 }
         start = text.find('{')
         end = text.rfind('}')
         
@@ -210,41 +203,27 @@ Input: "A123456789" (上一題問身分證)
         return text
 
     def _parse_amount(self, amount_str):
-        """
-        解析台灣常見的金額表達方式
-        支援:
-        - "5萬" → 50000
-        - "50萬" → 500000
-        - "100k" → 100000
-        - "1.5M" → 1500000
-        """
+        """解析台灣常見的金額表達方式"""
         if isinstance(amount_str, (int, float)):
             return int(amount_str)
         
-        amount_str = str(amount_str).strip()
+        amount_str = str(amount_str).strip().replace(',', '')
         
-        # 移除逗號
-        amount_str = amount_str.replace(',', '')
-        
-        # 處理「萬」
         if '萬' in amount_str:
             num = re.findall(r'[\d.]+', amount_str)
             if num:
                 return int(float(num[0]) * 10000)
         
-        # 處理 k/K (千)
         if amount_str.lower().endswith('k'):
             num = re.findall(r'[\d.]+', amount_str)
             if num:
                 return int(float(num[0]) * 1000)
         
-        # 處理 m/M (百萬)
         if amount_str.lower().endswith('m'):
             num = re.findall(r'[\d.]+', amount_str)
             if num:
                 return int(float(num[0]) * 1000000)
         
-        # 純數字
         try:
             return int(float(amount_str))
         except ValueError:

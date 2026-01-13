@@ -31,7 +31,6 @@ class RAGService:
         # 延遲載入
         self._initialized = False
 
-    def get_embedding(self, text):
     def _lazy_init(self):
         """延遲初始化 (避免啟動時就載入大模型)"""
         if self._initialized:
@@ -58,6 +57,7 @@ class RAGService:
         
         self._initialized = True
 
+    def get_embedding(self, text: str) -> List[float]:
         """
         將文字轉為向量 (List of floats)
         

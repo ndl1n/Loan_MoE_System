@@ -1,10 +1,5 @@
-"""
-MoE 路由整合層 (修正版)
-根據實際訓練資料調整
-"""
-
 import logging
-from typing import Dict
+from typing import Dict, Tuple, List
 
 logger = logging.getLogger(__name__)
 

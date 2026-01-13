@@ -1,9 +1,20 @@
+"""
+User Session Manager
+使用 Redis 管理使用者對話狀態
+"""
+
 import redis
 import json
-import os
+import time
 import logging
-from dotenv import load_dotenv
 from typing import Dict, List, Optional
+from dotenv import load_dotenv
+
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config import REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_PASSWORD, SESSION_TTL
 
 # 設定 Logger
 logging.basicConfig(
@@ -15,16 +26,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # ==========================================
-# ⚙️ Redis Configuration
-# ==========================================
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB = int(os.getenv("REDIS_DB", 0))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
-SESSION_TTL = int(os.getenv("SESSION_TTL", 3600))  # 預設 1 小時
-
-# ==========================================
-# 🔌 Redis Connection Pool (改善版)
+# 📌 Redis Connection Pool
 # ==========================================
 try:
     pool = redis.ConnectionPool(
@@ -35,7 +37,7 @@ try:
         decode_responses=True,
         socket_timeout=5,
         socket_connect_timeout=5,
-        max_connections=50  # 增加連線池大小
+        max_connections=50
     )
     redis_client = redis.Redis(connection_pool=pool)
     
@@ -45,22 +47,17 @@ try:
 
 except redis.exceptions.ConnectionError as e:
     logger.error(f"❌ Redis connection failed: {e}")
-    redis_client = None  # 避免後續呼叫時出錯
+    redis_client = None
 
 
 # ==========================================
-# 👤 User Session Manager (改善版)
+# 👤 User Session Manager
 # ==========================================
 class UserSessionManager:
     """
     負責管理單一使用者的:
     1. Profile (貸款申請資料)
     2. Conversation History (對話紀錄)
-    
-    改進重點:
-    - 更完善的錯誤處理
-    - 更好的 Redis 操作效率
-    - 加入資料一致性檢查
     """
 
     DEFAULT_PROFILE = {
@@ -71,8 +68,10 @@ class UserSessionManager:
         "job": None,
         "income": None,
         "amount": None,
+        "company": None,
         "last_asked_field": None,
         "retry_count": 0,
+        "verification_status": None,  # 新增: 追蹤驗證狀態
         "created_at": None,
         "updated_at": None
     }
@@ -93,7 +92,7 @@ class UserSessionManager:
     # Profile Management
     # -------------------------
     def get_profile(self) -> Dict:
-        """讀取使用者 profile,若不存在則初始化"""
+        """讀取使用者 profile，若不存在則初始化"""
         try:
             data = redis_client.get(self.profile_key)
             
@@ -104,7 +103,7 @@ class UserSessionManager:
             
             profile = json.loads(data)
             
-            # 確保所有欄位都存在 (防止 schema 更新後缺欄位)
+            # 確保所有欄位都存在
             for key in self.DEFAULT_PROFILE:
                 if key not in profile:
                     profile[key] = self.DEFAULT_PROFILE[key]
@@ -113,7 +112,7 @@ class UserSessionManager:
             
         except json.JSONDecodeError as e:
             logger.error(f"Profile JSON decode failed for {self.user_id}: {e}")
-            self._init_profile()  # 重新初始化
+            self._init_profile()
             return self.DEFAULT_PROFILE.copy()
             
         except Exception as e:
@@ -121,28 +120,16 @@ class UserSessionManager:
             return self.DEFAULT_PROFILE.copy()
 
     def update_profile(self, updates: Dict) -> Dict:
-        """
-        更新部分欄位 (Partial Update)
-        
-        改進:
-        - 加入時間戳記
-        - 優化寫入邏輯
-        - 更好的錯誤處理
-        """
+        """更新部分欄位 (Partial Update)"""
         try:
-            # 1. 讀取當前 profile
             current_profile = self.get_profile()
 
-            # 2. 記錄更新時間
-            import time
             if current_profile.get("created_at") is None:
                 current_profile["created_at"] = time.time()
             current_profile["updated_at"] = time.time()
 
-            # 3. 合併新資料
             updated = False
             for k, v in updates.items():
-                # 忽略 None 值 (避免覆蓋已有資料)
                 if v is None:
                     continue
                     
@@ -151,7 +138,6 @@ class UserSessionManager:
                     updated = True
                     logger.info(f"[Profile Update] {self.user_id}: {k} = {v}")
 
-            # 4. 若有變動才寫入
             if updated:
                 json_data = json.dumps(current_profile, ensure_ascii=False)
                 self._save_to_redis(self.profile_key, json_data)
@@ -164,7 +150,6 @@ class UserSessionManager:
 
     def _init_profile(self):
         """初始化空的 Profile"""
-        import time
         initial_data = self.DEFAULT_PROFILE.copy()
         initial_data["created_at"] = time.time()
         
@@ -177,17 +162,10 @@ class UserSessionManager:
     # History Management
     # -------------------------
     def add_message(self, role: str, content: str):
-        """
-        新增對話紀錄
-        
-        改進:
-        - 加入時間戳
-        - 限制歷史長度
-        """
+        """新增對話紀錄"""
         if not content or not content.strip():
             return
 
-        import time
         msg = json.dumps({
             "role": role,
             "content": content,
@@ -196,16 +174,9 @@ class UserSessionManager:
 
         try:
             pipe = redis_client.pipeline()
-            
-            # 新增訊息
             pipe.rpush(self.history_key, msg)
-            
-            # 限制歷史長度 (保留最近 50 則)
             pipe.ltrim(self.history_key, -50, -1)
-            
-            # 更新 TTL
             pipe.expire(self.history_key, SESSION_TTL)
-            
             pipe.execute()
             
             logger.debug(f"[Message Added] {self.user_id} ({role}): {content[:50]}...")
@@ -216,7 +187,6 @@ class UserSessionManager:
     def get_history(self, limit: int = 10) -> List[Dict]:
         """取得最近 N 筆對話紀錄"""
         try:
-            # Redis lrange 是包含式的,所以用 -limit 到 -1
             msgs = redis_client.lrange(self.history_key, -limit, -1)
             
             result = []
@@ -251,7 +221,7 @@ class UserSessionManager:
             logger.error(f"Failed to clear session for {self.user_id}: {e}")
 
     def get_session_info(self) -> Dict:
-        """取得 session 基本資訊 (除錯用)"""
+        """取得 session 基本資訊"""
         try:
             profile_ttl = redis_client.ttl(self.profile_key)
             history_ttl = redis_client.ttl(self.history_key)
@@ -278,4 +248,4 @@ class UserSessionManager:
             
         except Exception as e:
             logger.error(f"Redis write failed for {key}: {e}")
-            raise  # 往上拋出,讓呼叫方知道寫入失敗
+            raise

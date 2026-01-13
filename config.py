@@ -220,6 +220,13 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 SESSION_TTL = int(os.getenv("SESSION_TTL", 3600))
 
 # ==========================================
+# 🗄️ MongoDB 設定
+# ==========================================
+
+MONGODB_URI = os.getenv("MONGODB_URI")
+DB_NAME = os.getenv("DB_NAME", "MoE-Finance")
+
+# ==========================================
 # 🎯 MoE 路由閾值
 # ==========================================
 

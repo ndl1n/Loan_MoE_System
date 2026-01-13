@@ -189,51 +189,44 @@ class MoEGateKeeper:
         
         # [A] 資料不完整: unknown → LDE
         if status_str == "unknown":
-            logger.info("🛡️  Guardrail: 資料未完成 → LDE")
+            logger.info("🛡️ Guardrail: 資料未完成 → LDE")
             return "LDE", 1.0, "Guardrail: Incomplete Data (unknown status)"
         
         # [B] 缺少必要欄位: → LDE
-        # 根據訓練資料,name 必須有 (id 可以 null)
         if not profile.get("name"):
-            logger.info("🛡️  Guardrail: 缺少姓名 → LDE")
+            logger.info("🛡️ Guardrail: 缺少姓名 → LDE")
             return "LDE", 1.0, "Guardrail: Missing Name"
         
-        # [C] 已驗證: verified → FRE (進行風險評估)
+        # [C] 已驗證: verified → FRE
         if status_str == "verified":
-            logger.info("🛡️  Guardrail: 已驗證 → FRE")
+            logger.info("🛡️ Guardrail: 已驗證 → FRE")
             return "FRE", 1.0, "Guardrail: Verified Status → Risk Assessment"
         
-        # [D] 欄位不符: mismatch → LDE (讓專員處理)
+        # [D] 欄位不符: mismatch → LDE
         if status_str == "mismatch":
-            logger.info("🛡️  Guardrail: 資料不符 → LDE")
+            logger.info("🛡️ Guardrail: 資料不符 → LDE")
             return "LDE", 1.0, "Guardrail: Data Mismatch → Agent Review"
         
         # [E] 技術問題: → DVE
-        tech_keywords = [
-            "系統", "錯誤", "無法", "bug", "故障", "異常",
-            "補件", "驗證", "確認", "資料"
-        ]
+        tech_keywords = ["系統", "錯誤", "無法", "bug", "故障", "異常", "補件", "驗證", "確認", "資料"]
         if any(kw in text for kw in tech_keywords):
-            logger.info("🛡️  Guardrail: 技術/補件問題 → DVE")
+            logger.info("🛡️ Guardrail: 技術/補件問題 → DVE")
             return "DVE", 0.95, "Guardrail: Technical/Verification Issue"
         
         # [F] pending 狀態下的路由邏輯
         if status_str == "pending":
-            # pending + 高風險 → DVE (先嚴格驗證)
             if risk_score >= 0.7:
-                logger.info("🛡️  Guardrail: Pending + 高風險 → DVE")
+                logger.info("🛡️ Guardrail: Pending + 高風險 → DVE")
                 return "DVE", 0.90, "Guardrail: High Risk Verification"
             
-            # pending + 極低風險 → DVE (但可能快速通過)
-            # 注意: 根據訓練資料,pending 通常會到 DVE
             if risk_score <= 0.3:
-                logger.info("🛡️  Guardrail: Pending + 低風險 → DVE")
+                logger.info("🛡️ Guardrail: Pending + 低風險 → DVE")
                 return "DVE", 0.85, "Guardrail: Low Risk Quick Verification"
         
         # [G] 額度相關問題: verified → FRE
         quota_keywords = ["額度", "申覆", "金額", "多少錢", "可以貸"]
         if any(kw in text for kw in quota_keywords) and status_str == "verified":
-            logger.info("🛡️  Guardrail: 額度問題 → FRE")
+            logger.info("🛡️ Guardrail: 額度問題 → FRE")
             return "FRE", 0.95, "Guardrail: Quota/Amount Inquiry"
 
         # ==========================
@@ -315,9 +308,7 @@ class MoEGateKeeper:
             
             # === 信心度檢查 ===
             if confidence < CONFIDENCE_THRESHOLD:
-                logger.warning(
-                    f"⚠️  信心度過低 ({confidence:.2f}), 使用規則式 Fallback"
-                )
+                logger.warning(f"⚠️ 信心度過低 ({confidence:.2f}), 使用規則式 Fallback")
                 return self._rule_based_fallback(profile, status_str, risk_score)
             
             return expert, confidence, "AI Model Inference"

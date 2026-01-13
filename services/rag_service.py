@@ -73,7 +73,12 @@ class RAGService:
         # sentence-transformers 回傳 numpy array,轉成 list 才能存 MongoDB
         return self.encoder.encode(text).tolist()
 
-    def add_document(self, user_id, content, metadata={}):
+    def add_document(
+        self, 
+        user_id: str, 
+        content: str, 
+        metadata: Dict = None
+    ) -> Optional[str]:
         """
         新增資料 - 將文字轉成向量並存入 MongoDB
         
@@ -145,7 +150,7 @@ class RAGService:
             # Fallback: 回傳空陣列
             return []
 
-    def get_user_history_by_id(self, user_id):
+    def get_user_history_by_id(self, user_id: str) -> List[Dict]:
         """
         精準檢索 - 根據 User ID 撈出該用戶的所有歷史資料
         

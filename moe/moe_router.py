@@ -52,7 +52,7 @@ class ProfileAdapter:
         return adapted
     
     @staticmethod
-    def validate_for_moe(profile: Dict) -> tuple:
+    def validate_for_moe(profile: Dict) -> Tuple[bool, List[str]]:
         """
         驗證 profile 是否符合 MoE 最低要求
         
@@ -112,7 +112,7 @@ class VerificationStatusManager:
             return "pending"
     
     @staticmethod
-    def update_status(session_mgr, new_status: str):
+    def update_status(session_mgr, new_status: str) -> bool:
         """
         更新 verification_status 到 Redis
         
@@ -147,7 +147,7 @@ class MoERouter:
         profile: Dict,
         user_query: str,
         is_collection_complete: bool = True
-    ) -> tuple:
+    ) -> Tuple[str, float, str, Dict]:
         """
         路由到對應的專家
         

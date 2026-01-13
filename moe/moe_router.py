@@ -56,8 +56,8 @@ class ProfileAdapter:
         """
         驗證 profile 是否符合 MoE 最低要求
         
-        根據訓練資料,至少需要: name, job, income, purpose
-        (id 可以是 null,見訓練資料第一筆)
+        根據訓練資料，至少需要: name, job, income, purpose
+        (id 可以是 null)
         """
         missing = []
         
@@ -80,7 +80,7 @@ class VerificationStatusManager:
     
     狀態定義:
     - unknown: 資料未收集完成
-    - pending: 資料收集完成,等待 DVE 驗證
+    - pending: 資料收集完成，等待 DVE 驗證
     - verified: DVE 驗證通過
     - mismatch: DVE 發現欄位不符
     """
@@ -93,12 +93,12 @@ class VerificationStatusManager:
         根據當前狀態推斷 verification_status
         
         邏輯:
-        1. 資料未收集完成 → unknown
-        2. 資料收集完成,未經 DVE → pending
-        3. 經過 DVE 驗證 → verified 或 mismatch (由 DVE 更新)
+        1. 如果 profile 中已有明確狀態，直接使用
+        2. 資料未收集完成 → unknown
+        3. 資料收集完成，未經 DVE → pending
         """
         
-        # 檢查是否有明確的狀態 (例如從 Redis 讀取)
+        # 優先使用明確的狀態
         explicit_status = profile.get("verification_status")
         
         if explicit_status in VerificationStatusManager.VALID_STATUSES:
@@ -108,7 +108,6 @@ class VerificationStatusManager:
         if not is_collection_complete:
             return "unknown"
         else:
-            # 資料收集完成,預設為 pending (待 DVE 驗證)
             return "pending"
     
     @staticmethod
@@ -116,7 +115,10 @@ class VerificationStatusManager:
         """
         更新 verification_status 到 Redis
         
-        由 DVE 呼叫,更新為 verified 或 mismatch
+        由 DVE 呼叫，更新為 verified 或 mismatch
+        
+        Returns:
+            是否更新成功
         """
         if new_status not in VerificationStatusManager.VALID_STATUSES:
             logger.error(f"無效的狀態: {new_status}")
@@ -152,7 +154,7 @@ class MoERouter:
         路由到對應的專家
         
         Args:
-            profile: 對話收集的完整 profile (包含內部狀態欄位)
+            profile: 對話收集的完整 profile
             user_query: 使用者當前的問題/訊息
             is_collection_complete: 是否已完成資料收集
         
@@ -216,16 +218,12 @@ class MoERouter:
             
         except Exception as e:
             logger.error(f"❌ MoE 路由失敗: {e}", exc_info=True)
-            # Fallback
             return "LDE", 0.5, f"Error: {str(e)}", {"error": str(e)}
     
     def _calculate_completeness(self, profile: Dict) -> float:
         """
         計算資料完整度
-        
-        根據 MoE 訓練資料的欄位計算
         """
-        # MoE 訓練時的欄位
         training_fields = ["name", "id", "job", "income", "purpose", "amount"]
         
         filled_count = sum(

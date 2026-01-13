@@ -1,14 +1,87 @@
-# Loan-MoE: Intelligent Financial Risk Assessment System via Mixture of Experts
+# Loan-MoE: A Neuro-Symbolic Mixture of Experts Architecture for Intelligent Financial Risk Assessment
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red) ![PEFT](https://img.shields.io/badge/PEFT-LoRA-orange) ![License](https://img.shields.io/badge/License-MIT-green)
+<div align="center">
+  
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![Transformers](https://img.shields.io/badge/🤗_Transformers-4.36%2B-FFD21E?style=for-the-badge)
+![PEFT](https://img.shields.io/badge/PEFT-LoRA-FF6F00?style=for-the-badge)
+![Redis](https://img.shields.io/badge/Redis-7.0%2B-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-> **A Neuro-Symbolic Architecture for Automated Loan Processing, Verification, and Decision Making.**
+**A Domain-Specific Large Language Model System for Automated Loan Processing, Verification, and Credit Decisioning**
+
+</div>
+
+## 📋 Table of Contents
+
+- [Abstract](#-abstract)
+- [Introduction](#-introduction)
+- [Related Work](#-related-work)
+- [System Architecture](#-system-architecture)
+- [Methodology: The Three Experts](#-methodology-the-three-experts)
+- [Gating Network Design](#-gating-network-design)
+- [Data Flow & State Management](#-data-flow--state-management)
+- [Key Technical Innovations](#-key-technical-innovations)
+- [Tech Stack](#-tech-stack)
+- [Installation & Setup](#-installation--setup)
+- [Usage](#-usage)
+- [Evaluation & Benchmarks](#-evaluation--benchmarks)
+- [Limitations & Future Work](#-limitations--future-work)
+- [Citation](#-citation)
+- [License](#-license)
 
 ## 📖 Abstract
 
 **Loan-MoE** is a domain-specific Large Language Model (LLM) system designed to automate the end-to-end loan application process. Traditional monolithic models often struggle to balance the diverse requirements of conversational fluency, strict fact-checking, and mathematical risk assessment. Loan-MoE addresses this challenge by leveraging a **Mixture of Experts (MoE)** architecture.
 
-The system decomposes the complex lending workflow into three specialized experts: **LDE (Loan Default Expert)** for interaction, **DVE (Data Verification Expert)** for fraud detection, and **FRE (Financial Risk Expert)** for credit decisioning. A state-aware **Gating Network** dynamically routes tasks based on user intent and application status, ensuring high precision, interpretability, and safety in financial decision-making.
+The system decomposes the complex lending workflow into three specialized experts: **LDE (Loan Desk Expert)** for interaction, **DVE (Data Verification Expert)** for fraud detection, and **FRE (Financial Risk Expert)** for credit decisioning. A state-aware **Gating Network** dynamically routes tasks based on user intent and application status, ensuring high precision, interpretability, and safety in financial decision-making.
+
+| Expert | Role | Primary Function |
+|--------|------|------------------|
+| **LDE** (Loan Desk Expert) | Front-End Interface | Customer interaction & data collection |
+| **DVE** (Data Verification Expert) | Auditor | Fraud detection via RAG-based verification |
+| **FRE** (Financial Risk Expert) | Decision Maker | Credit scoring & final approval |
+
+A **state-aware Gating Network** dynamically routes tasks based on user intent, verification status, and profile completeness. The architecture employs a **Neuro-Symbolic** paradigm that delegates "hard logic" (financial calculations) to deterministic Python modules while reserving "soft logic" (conversational understanding) for fine-tuned LLMs.
+
+---
+
+## 🎯 Introduction
+
+### Problem Statement
+
+The financial services industry processes millions of loan applications annually, requiring:
+
+1. **Natural Language Understanding** — Parsing unstructured customer inputs
+2. **Data Consistency Verification** — Detecting fraudulent or inconsistent information
+3. **Quantitative Risk Assessment** — Computing debt ratios and credit scores
+4. **Regulatory Compliance** — Ensuring decisions meet legal requirements
+
+Existing approaches fall into two categories, each with critical limitations:
+
+| Approach | Limitation |
+|----------|------------|
+| **Rule-Based Systems** | Brittle; cannot handle linguistic variation |
+| **End-to-End LLMs** | Hallucination-prone; unreliable at arithmetic |
+
+### Solution
+
+Loan-MoE introduces a **hybrid Neuro-Symbolic architecture** that:
+
+- **Specializes** different aspects of the task to dedicated expert modules
+- **Routes** dynamically based on application state and user intent
+- **Guarantees** mathematical correctness through deterministic computation
+- **Enforces** safety constraints via post-inference circuit breakers
+
+### Contributions
+
+1. **Novel MoE Architecture** for financial domain with state-aware routing
+2. **Neuro-Symbolic Integration** separating soft reasoning from hard computation
+3. **RAG-Enhanced Verification** for fraud detection against historical records
+4. **Safety Guard Framework** ensuring regulatory compliance
+5. **Open-Source Implementation** with comprehensive test suite
 
 ---
 
@@ -73,3 +146,31 @@ To be edited...
 * OS: Linux (Ubuntu 20.04+) or Windows WSL2
 * GPU: NVIDIA GPU with CUDA support (Recommended)
 * Python: 3.10+
+
+---
+
+## ⚠️ Limitations & Future Work
+
+### Current Limitations
+
+1. **Single Language:** Currently supports Traditional Chinese only
+2. **Simplified Credit Model:** Uses heuristic scoring vs. full bureau integration
+3. **No Document OCR:** Requires manual data entry (no ID card scanning)
+4. **GPU Dependency:** Full functionality requires NVIDIA GPU
+
+### Planned Enhancements
+
+| Feature | Priority | Status |
+|---------|----------|--------|
+| Multi-language support (EN, ZH-CN) | High | Planned |
+| Integration with credit bureaus | High | Planned |
+| Document OCR pipeline | Medium | Research |
+| Web UI (React + FastAPI) | Medium | In Progress |
+| Kubernetes deployment | Low | Planned |
+| Model distillation for CPU | Low | Research |
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

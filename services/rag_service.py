@@ -189,7 +189,20 @@ class RAGService:
             logger.warning("MongoDB 未連線，返回空歷史")
             return []
         
-        return results
+        try:
+            results = list(
+                self._collection.find(
+                    {"user_id": user_id},
+                    {"_id": 0, "embedding": 0}
+                )
+            )
+            
+            logger.info(f"📂 找到 {len(results)} 筆歷史紀錄 (User: {user_id})")
+            
+            return results
+        except Exception as e:
+            logger.error(f"❌ 查詢歷史失敗: {e}")
+            return []
 
 
 # 方便外部使用的單例物件

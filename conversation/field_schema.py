@@ -1,15 +1,12 @@
 import re
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Dict, List, Tuple
+
 
 class Field:
     """
     欄位定義類別
-    
-    改進:
-    - 加入 validator 函數支援
-    - 加入錯誤訊息
-    - 加入優先級設定
     """
+    
     def __init__(
         self,
         name: str,
@@ -24,9 +21,9 @@ class Field:
         self.type = ftype
         self.validator = validator
         self.error_msg = error_msg or f"{name} 格式不正確"
-        self.priority = priority  # 數字越小越優先
+        self.priority = priority
 
-    def validate(self, value: Any) -> tuple[bool, Optional[str]]:
+    def validate(self, value: Any) -> Tuple[bool, Optional[str]]:
         """
         驗證欄位值
         回傳: (是否有效, 錯誤訊息)
@@ -65,14 +62,11 @@ class Field:
     @staticmethod
     def _validate_phone(phone: str) -> bool:
         """驗證台灣手機號碼"""
-        # 移除所有非數字字元
         digits = re.sub(r'\D', '', str(phone))
         
-        # 處理 +886 開頭
         if digits.startswith('886'):
             digits = '0' + digits[3:]
         
-        # 必須是 10 碼且以 09 開頭
         return len(digits) == 10 and digits.startswith('09')
 
     @staticmethod
@@ -81,30 +75,21 @@ class Field:
         if not id_str or len(id_str) != 10:
             return False
         
-        # 第一碼必須是英文字母
         if not id_str[0].isalpha():
             return False
         
-        # 後面 9 碼必須是數字
         if not id_str[1:].isdigit():
             return False
         
-        # 可以加入更嚴格的檢查碼驗證...
         return True
 
 
 class FieldSchema:
     """
     欄位 Schema 管理
-    
-    改進:
-    - 加入欄位優先級排序
-    - 加入批次驗證
-    - 更好的缺失欄位邏輯
     """
 
     def __init__(self):
-        # 定義欄位順序 (priority 越小越優先詢問)
         self.fields = {
             "name": Field(
                 "name",
@@ -149,36 +134,29 @@ class FieldSchema:
             )
         }
 
-    def get_missing_fields(self, profile_state: dict) -> list:
+    def get_missing_fields(self, profile_state: Dict) -> List[str]:
         """
-        取得缺少的必填欄位,並按優先級排序
-        
-        改進: 按 priority 排序,確保問題順序合理
+        取得缺少的必填欄位，並按優先級排序
         """
         missing = []
         
         for k, field in self.fields.items():
             value = profile_state.get(k)
             
-            # 檢查是否為必填且缺失
             if field.required:
                 if value is None or value == "":
                     missing.append(k)
         
-        # 按照優先級排序
         missing.sort(key=lambda x: self.fields[x].priority)
         
         return missing
 
-    def all_required_filled(self, profile_state: dict) -> bool:
+    def all_required_filled(self, profile_state: Dict) -> bool:
         """檢查是否所有必填欄位都已填寫"""
         return len(self.get_missing_fields(profile_state)) == 0
 
-    def validate_all(self, profile_state: dict) -> dict:
-        """
-        驗證所有欄位
-        回傳: {欄位名: (是否有效, 錯誤訊息)}
-        """
+    def validate_all(self, profile_state: Dict) -> Dict:
+        """驗證所有欄位"""
         results = {}
         
         for field_name, field_def in self.fields.items():
@@ -191,10 +169,8 @@ class FieldSchema:
         
         return results
 
-    def get_validation_errors(self, profile_state: dict) -> dict:
-        """
-        只回傳有錯誤的欄位
-        """
+    def get_validation_errors(self, profile_state: Dict) -> Dict:
+        """只回傳有錯誤的欄位"""
         all_results = self.validate_all(profile_state)
         
         errors = {

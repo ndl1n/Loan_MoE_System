@@ -67,10 +67,11 @@ class LocalLLMManager:
         )
         
         # === 載入 Base Model ===
+        # 修正: device_map 應該是 "auto" 或 dict，不是 torch.device
         self._base_model = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL_PATH,
             quantization_config=bnb_config,
-            device_map="auto",  # 自動分配到 GPU
+            device_map="auto",  # 修正: 使用 "auto" 而非 DEVICE
             trust_remote_code=True
         )
         

@@ -29,7 +29,7 @@ class BaseExpert:
         """
         self.llm = LocalLLMManager.get_instance()
     
-    def process(self, task_data, history=[]):
+    def process(self, task_data: Dict, history: List = None) -> Dict[str, Any]:
         """
         處理專家任務 (子類必須實作)
         
@@ -54,12 +54,12 @@ class BaseExpert:
     
     def _call_local_llm(
         self,
-        adapter_path,
-        system_prompt,
-        user_query,
-        template=None,
-        max_new_tokens=256
-    ):
+        adapter_path: str,
+        system_prompt: str,
+        user_query: str,
+        template: str = None,
+        max_new_tokens: int = 256
+    ) -> str:
         """
         呼叫本地微調模型的便捷方法
         

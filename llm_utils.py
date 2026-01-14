@@ -111,6 +111,11 @@ class LocalLLMManager:
             生成的文字
         """
         
+        # 檢查是否已初始化
+        if self._base_model is None:
+            logger.error("❌ Base Model 未載入 (ENABLE_FINETUNED_MODELS=False)")
+            return "系統錯誤: 模型未啟用"
+        
         # === 1. 檢查 Adapter 是否存在 ===
         adapter_file = os.path.join(adapter_path, "adapter_model.safetensors")
         adapter_file_bin = os.path.join(adapter_path, "adapter_model.bin")

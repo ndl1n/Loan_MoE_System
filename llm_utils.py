@@ -177,7 +177,7 @@ class LocalLLMManager:
                     max_new_tokens=max_new_tokens,
                     use_cache=True,
                     eos_token_id=self.terminators,
-                    temperature=temperature,
+                    temperature=temperature if temperature > 0 else 0.1,
                     top_p=top_p,
                     do_sample=True if temperature > 0 else False
                 )

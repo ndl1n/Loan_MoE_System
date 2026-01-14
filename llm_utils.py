@@ -42,6 +42,15 @@ class LocalLLMManager:
         if LocalLLMManager._instance is not None:
             raise RuntimeError("請使用 get_instance() 取得實例")
         
+        # 檢查是否啟用 Fine-tuned Models
+        if not ENABLE_FINETUNED_MODELS:
+            logger.warning("⚠️  Fine-tuned Models 未啟用，LocalLLMManager 將不載入模型")
+            self._tokenizer = None
+            self._base_model = None
+            self._loaded_adapters = {}
+            self.terminators = []
+            return
+        
         logger.info(f"🔄 [LocalLLM] 載入 Base Model: {BASE_MODEL_PATH}...")
         
         # === 配置 4-bit 量化 ===

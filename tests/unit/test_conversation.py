@@ -235,9 +235,11 @@ class TestUtils:
         """測試有效身分證字號"""
         from conversation.utils import validate_tw_id
         
-        # 這些是格式正確的測試用號碼
-        assert validate_tw_id("A123456789") is True
-        assert validate_tw_id("B223456789") is True
+        # 這些是通過檢查碼驗證的測試用身分證字號
+        # 注意：這些是符合檢查碼演算法的測試資料，非真實身分證
+        assert validate_tw_id("A123456789") is True  # A=10, 總和=130, 130%10=0 ✓
+        assert validate_tw_id("B134370951") is True  # 另一個有效格式
+        assert validate_tw_id("F105666362") is True  # 另一個有效格式
     
     def test_validate_tw_id_invalid(self):
         """測試無效身分證字號"""

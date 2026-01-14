@@ -74,6 +74,9 @@ class LocalLLMManager:
             trust_remote_code=True
         )
         
+        # === Adapter 快取 ===
+        self._loaded_adapters = {}
+        
         # === 設定終止符號 ===
         self.terminators = [
             self._tokenizer.eos_token_id,
@@ -110,6 +113,7 @@ class LocalLLMManager:
         
         # === 1. 檢查 Adapter 是否存在 ===
         adapter_file = os.path.join(adapter_path, "adapter_model.safetensors")
+        adapter_file_bin = os.path.join(adapter_path, "adapter_model.bin")
         
         if not os.path.exists(adapter_file) and not os.path.exists(adapter_file_bin):
             logger.error(f"❌ 找不到 Adapter: {adapter_path}")
@@ -117,10 +121,18 @@ class LocalLLMManager:
         
         logger.debug(f"📂 載入 Adapter: {adapter_path}")
         
-        # === 2. 掛載 Adapter ===
+        # === 2. 掛載 Adapter (含快取) ===
         try:
-            model = PeftModel.from_pretrained(self._base_model, adapter_path)
-            model.eval()
+            if adapter_path not in self._loaded_adapters:
+                logger.info(f"🔄 首次載入 Adapter: {adapter_path}")
+                model = PeftModel.from_pretrained(self._base_model, adapter_path)
+                model.eval()
+                self._loaded_adapters[adapter_path] = model
+            else:
+                logger.debug(f"📦 使用快取的 Adapter: {adapter_path}")
+            
+            model = self._loaded_adapters[adapter_path]
+            
         except Exception as e:
             logger.error(f"❌ Adapter 載入失敗: {e}", exc_info=True)
             return f"系統錯誤: 模型載入失敗 ({str(e)})"
@@ -187,3 +199,9 @@ class LocalLLMManager:
         logger.debug(f"生成文字: {generated_text[:100]}...")
         
         return generated_text.strip()
+    
+    def clear_adapter_cache(self):
+        """清除 Adapter 快取 (釋放 GPU 記憶體)"""
+        self._loaded_adapters.clear()
+        torch.cuda.empty_cache()
+        logger.info("🗑️ Adapter 快取已清除")

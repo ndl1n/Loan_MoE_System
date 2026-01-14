@@ -81,8 +81,15 @@ class LocalLLMManager:
         # === 設定終止符號 ===
         self.terminators = [
             self._tokenizer.eos_token_id,
-            self._tokenizer.convert_tokens_to_ids("<|eot_id|>")
         ]
+        
+        # 嘗試加入 eot_id (如果存在)
+        try:
+            eot_id = self._tokenizer.convert_tokens_to_ids("<|eot_id|>")
+            if eot_id != self._tokenizer.unk_token_id:
+                self.terminators.append(eot_id)
+        except Exception:
+            pass
         
         logger.info("✅ Base Model 載入完成")
     

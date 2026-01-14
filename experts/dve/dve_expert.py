@@ -20,7 +20,12 @@ from peft import PeftModel
 # 從上層導入
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+# 確保可以正確 import 專案模組
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 
 from config import (
     DVE_ADAPTER_PATH,
@@ -35,7 +40,7 @@ from experts.base import BaseExpert
 logger = logging.getLogger(__name__)
 
 
-class DVE_Expert(BaseExpert):
+class DVEExpert(BaseExpert):
     """
     DVE: 資料查核專家 (Ultimate Robust Version)
     

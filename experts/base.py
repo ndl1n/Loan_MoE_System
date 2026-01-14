@@ -5,6 +5,7 @@ Base Expert - 專家基類
 
 import sys
 import os
+from typing import Dict, List, Any
 
 # 確保可以找到上層模組
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

@@ -14,7 +14,11 @@ from google import genai
 # 從上層導入
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# 確保可以正確 import 專案模組
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 
 from config import (
     GEMINI_API_KEY,
@@ -33,7 +37,7 @@ logger = logging.getLogger(__name__)
 gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-class LDE_Expert(BaseExpert):
+class LDEExpert(BaseExpert):
     """
     LDE: 貸款徵審專家 (Loan Desk Expert)
     Mode A: Local Fine-tuned Model (諮詢)

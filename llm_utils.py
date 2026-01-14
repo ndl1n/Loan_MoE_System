@@ -9,11 +9,7 @@ import logging
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
 
-# 導入配置
-import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from config import BASE_MODEL_PATH, DEVICE
+from config import BASE_MODEL_PATH, DEVICE, ENABLE_FINETUNED_MODELS
 
 logger = logging.getLogger(__name__)
 

@@ -25,7 +25,7 @@ class BaseExpert:
     def __init__(self):
         """
         初始化基類
-        所有專家共用同一個 LLM 實例,節省記憶體
+        所有專家共用同一個 LLM 實例，節省記憶體
         """
         self.llm = LocalLLMManager.get_instance()
     

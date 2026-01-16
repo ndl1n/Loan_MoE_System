@@ -1,0 +1,74 @@
+# ============================================================
+# Loan-MoE System Dockerfile (CPU Only Version)
+# For systems without NVIDIA GPU
+# ============================================================
+
+FROM python:3.10-slim-bullseye AS base
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Set timezone
+ENV TZ=Asia/Taipei
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    wget \
+    vim \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# ============================================================
+# Dependencies
+# ============================================================
+FROM base AS dependencies
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+# Install PyTorch CPU version
+RUN pip install --no-cache-dir \
+    torch==2.1.0 \
+    torchvision==0.16.0 \
+    torchaudio==2.1.0 \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Install other dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ============================================================
+# Production
+# ============================================================
+FROM dependencies AS production
+
+WORKDIR /app
+
+# Create non-root user
+RUN groupadd -r loanmoe && useradd -r -g loanmoe loanmoe
+
+COPY --chown=loanmoe:loanmoe . .
+
+# Create directories
+RUN mkdir -p /app/models /app/logs \
+    && chown -R loanmoe:loanmoe /app
+
+ENV PYTHONPATH=/app
+ENV ENABLE_FINETUNED_MODELS=False
+
+EXPOSE 8000
+
+USER loanmoe
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import torch; print('OK')" || exit 1
+
+CMD ["python", "main.py"]

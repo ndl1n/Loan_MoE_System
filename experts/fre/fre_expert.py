@@ -138,7 +138,8 @@ class FREExpert(BaseExpert):
         if not ENABLE_FINETUNED_MODELS or self.llm is None:
             logger.warning("⚠️ Fine-tuned Model 未啟用，使用規則式決策")
             return self._rule_based_decision(
-                p_income, p_job, p_amount, dbr, credit_score, dve_result
+                p_income, p_job, p_amount, dbr, credit_score, dve_result,
+                profile=profile
             )
         
         try:
@@ -148,7 +149,8 @@ class FREExpert(BaseExpert):
         except Exception as e:
             logger.error(f"❌ FRE AI 決策失敗: {e}", exc_info=True)
             return self._rule_based_decision(
-                p_income, p_job, p_amount, dbr, credit_score, dve_result
+                p_income, p_job, p_amount, dbr, credit_score, dve_result,
+                profile=profile
             )
     
     def _ai_decision(
@@ -269,9 +271,15 @@ class FREExpert(BaseExpert):
     
     def _rule_based_decision(
         self, p_income: int, p_job: str, p_amount: int,
-        dbr: float, credit_score: int, dve_result: Dict
+        dbr: float, credit_score: int, dve_result: Dict,
+        profile: Dict = None
     ) -> Dict[str, Any]:
-        logger.info("🔧 FRE 規則式決策模式 (Fallback)")
+        """
+        規則式決策 (Fallback)
+        
+        🔍 加入 RAG: 搜尋 case_library 中的相似案例作為參考
+        """
+        logger.info("🔧 FRE 規則式決策模式 (Fallback) + RAG")
         
         dve_risk = dve_result.get("risk_level", "MEDIUM")
         

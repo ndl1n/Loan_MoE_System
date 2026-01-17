@@ -53,24 +53,32 @@ class RAGService:
         self._initialized = False
 
     def _lazy_init(self):
-        """延遲初始化 (避免啟動時就載入大模型)"""
+        """延遲初始化"""
         if self._initialized:
             return
-            
-        # 取得 MongoDB Collection
-        self._collection = mongo_db.get_collection(self.collection_name)
         
-        if self._collection is None:
-            logger.warning("⚠️ MongoDB 未連線，RAG 功能將受限")
+        # 取得兩個 Collection
+        self._user_history = mongo_db.get_collection(self.USER_HISTORY_COLLECTION)
+        self._case_library = mongo_db.get_collection(self.CASE_LIBRARY_COLLECTION)
+        
+        if self._user_history is None:
+            logger.warning(f"⚠️ Collection '{self.USER_HISTORY_COLLECTION}' 未連線")
+        else:
+            logger.info(f"✅ Collection '{self.USER_HISTORY_COLLECTION}' 已連線")
+            
+        if self._case_library is None:
+            logger.warning(f"⚠️ Collection '{self.CASE_LIBRARY_COLLECTION}' 未連線")
+        else:
+            logger.info(f"✅ Collection '{self.CASE_LIBRARY_COLLECTION}' 已連線")
         
         # 載入 Embedding 模型
         try:
             from sentence_transformers import SentenceTransformer
-            logger.info("📥 正在載入 Embedding 模型 (all-MiniLM-L6-v2)...")
+            logger.info("📥 正在載入 Embedding 模型...")
             self._encoder = SentenceTransformer('all-MiniLM-L6-v2')
-            logger.info("✅ Embedding 模型載入完成")
+            logger.info("✅ Embedding 模型載入完成 (384 維)")
         except ImportError:
-            logger.warning("⚠️ sentence-transformers 未安裝，向量搜尋功能將無法使用")
+            logger.warning("⚠️ sentence-transformers 未安裝")
             self._encoder = None
         except Exception as e:
             logger.error(f"❌ Embedding 模型載入失敗: {e}")

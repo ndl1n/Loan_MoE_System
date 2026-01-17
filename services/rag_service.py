@@ -1,6 +1,23 @@
 """
 RAG 服務
-使用 MongoDB Vector Search 進行語意搜尋
+使用 MongoDB 進行資料存取和語意搜尋
+
+兩個 Collection，各司其職:
+
+1. user_history (精確查詢)
+   - 用途: DVE 驗證「這個人」的歷史申請紀錄
+   - 查詢: 根據 user_id 精確比對
+   - 內容: 每個用戶的個人資料和申請歷史
+
+2. case_library (語意搜尋 - 真正的 RAG)
+   - 用途: FRE 決策時找「相似案例」參考
+   - 查詢: Vector Search 語意相似度
+   - 內容: 匿名化的歷史案例 (含審核結果)
+
+使用場景:
+- LDE: 不使用 RAG (只負責問答和引導)
+- DVE: user_history (精確查詢驗證)
+- FRE: case_library (Vector Search 找相似案例)
 """
 
 import os

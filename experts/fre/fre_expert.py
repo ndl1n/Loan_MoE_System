@@ -275,6 +275,23 @@ class FREExpert(BaseExpert):
         
         dve_risk = dve_result.get("risk_level", "MEDIUM")
         
+        # === 🔍 RAG: 搜尋相似案例 ===
+        rag_reference = None
+        if profile:
+            try:
+                rag_reference = rag_engine.get_reference_for_decision(
+                    profile=profile,
+                    dve_risk_level=dve_risk,
+                    top_k=3
+                )
+                if rag_reference.get("similar_cases"):
+                    logger.info(f"📚 RAG: 找到 {len(rag_reference['similar_cases'])} 筆相似案例")
+                    logger.info(f"📚 RAG 建議: {rag_reference.get('recommendation')}")
+            except Exception as e:
+                logger.warning(f"⚠️ RAG 查詢失敗: {e}")
+        
+        # === 決策邏輯 ===
+        # 優先使用硬規則
         if dve_risk == "HIGH" or credit_score < 650 or dbr > 45:
             decision = "拒絕_REJECT"
             user_msg = "感謝申請。經綜合評估，暫時無法核貸。"
@@ -284,13 +301,27 @@ class FREExpert(BaseExpert):
             user_msg = "申請已受理，將轉由人工覆核。"
             next_step = "HUMAN_HANDOVER"
         else:
-            decision = "核准_PASS"
-            user_msg = f"恭喜！您的信用評分 ({credit_score}分) 符合標準。\n初審額度: {p_amount:,} 元"
-            next_step = "CASE_CLOSED_SUCCESS"
+            # 可參考 RAG 結果微調
+            if rag_reference and rag_reference.get("approval_rate") is not None:
+                approval_rate = rag_reference["approval_rate"]
+                if approval_rate < 0.3:
+                    # 相似案例核准率很低，謹慎處理
+                    decision = "轉介審核_ESCALATE"
+                    user_msg = "申請已受理，將轉由人工覆核。"
+                    next_step = "HUMAN_HANDOVER"
+                    logger.info(f"📚 RAG 影響決策: 相似案例核准率僅 {approval_rate:.0%}，轉人工")
+                else:
+                    decision = "核准_PASS"
+                    user_msg = f"恭喜！您的信用評分 ({credit_score}分) 符合標準。\n初審額度: {p_amount:,} 元"
+                    next_step = "CASE_CLOSED_SUCCESS"
+            else:
+                decision = "核准_PASS"
+                user_msg = f"恭喜！您的信用評分 ({credit_score}分) 符合標準。\n初審額度: {p_amount:,} 元"
+                next_step = "CASE_CLOSED_SUCCESS"
         
         logger.info(f"🔧 規則式決策結果: {decision}")
         
-        return {
+        result = {
             "expert": f"FRE ({decision})",
             "mode": "rule_based",
             "response": user_msg,
@@ -303,3 +334,14 @@ class FREExpert(BaseExpert):
             "financial_metrics": {"dbr": dbr, "score": credit_score},
             "next_step": next_step
         }
+        
+        # 加入 RAG 參考資訊
+        if rag_reference:
+            result["rag_reference"] = {
+                "similar_cases_count": len(rag_reference.get("similar_cases", [])),
+                "approval_rate": rag_reference.get("approval_rate"),
+                "avg_approved_amount": rag_reference.get("avg_approved_amount"),
+                "recommendation": rag_reference.get("recommendation")
+            }
+        
+        return result

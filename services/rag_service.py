@@ -34,10 +34,9 @@ class RAGService:
     """
     RAG 服務
     
-    職責:
-    - 將文字轉為向量 (Embedding)
-    - 語意搜尋 (Vector Search)
-    - 精準檢索 (根據 User ID)
+    使用兩個 Collection:
+    - user_history: 用戶個人歷史 (DVE 驗證用，精確查詢)
+    - case_library: 案例庫 (FRE RAG 用，Vector Search)
     """
     
     def __init__(self, collection_name: str = "user_history"):
@@ -75,15 +74,7 @@ class RAGService:
         self._initialized = True
 
     def get_embedding(self, text: str) -> List[float]:
-        """
-        將文字轉為向量 (List of floats)
-        
-        Args:
-            text: 要轉換的文字
-        
-        Returns:
-            list: 向量 (384 維)
-        """
+        """將文字轉為向量 (384 維)"""
         self._lazy_init()
         
         if not text or self._encoder is None:
@@ -158,7 +149,7 @@ class RAGService:
         if not query_vector:
             return []
         
-        # MongoDB Atlas Vector Search Pipeline
+        # MongoDB Atlas Vector Search
         pipeline = [
             {
                 "$vectorSearch": {

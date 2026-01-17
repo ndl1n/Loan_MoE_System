@@ -39,12 +39,17 @@ class RAGService:
     - case_library: 案例庫 (FRE RAG 用，Vector Search)
     """
     
-    def __init__(self, collection_name: str = "user_history"):
-        self.collection_name = collection_name
-        self._collection = None
+    # Collection 名稱
+    USER_HISTORY_COLLECTION = "user_history"
+    CASE_LIBRARY_COLLECTION = "case_library"
+    
+    # 相似度閾值
+    SIMILARITY_THRESHOLD = 0.5
+    
+    def __init__(self):
+        self._user_history = None
+        self._case_library = None
         self._encoder = None
-        
-        # 延遲載入
         self._initialized = False
 
     def _lazy_init(self):

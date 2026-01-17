@@ -190,6 +190,23 @@ class RAGService:
             
         except Exception as e:
             logger.warning(f"⚠️ Vector Search 失敗 (可能索引未建立): {e}")
+    def _fallback_search(self, query_text: str, top_k: int) -> List[Dict]:
+        """備援搜尋 (當 Vector Search 不可用時)"""
+        if self._case_library is None:
+            return []
+        
+        try:
+            # 用關鍵字搜尋
+            results = list(
+                self._case_library.find(
+                    {"$text": {"$search": query_text}},
+                    {"_id": 0, "embedding": 0, "score": {"$meta": "textScore"}}
+                ).sort([("score", {"$meta": "textScore"})]).limit(top_k)
+            )
+            logger.info(f"📝 Fallback 搜尋: 找到 {len(results)} 筆")
+            return results
+        except Exception as e:
+            logger.warning(f"Fallback 搜尋失敗: {e}")
             return []
 
     def get_user_history_by_id(self, user_id: str) -> List[Dict]:

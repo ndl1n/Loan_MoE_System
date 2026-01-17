@@ -3,12 +3,14 @@ FRE Expert (Financial Risk Expert) - 最終風控專家
 
 負責：
 - 綜合評估申請人的信用與財務狀況
+- 🔍 使用 RAG 搜尋相似案例輔助決策
 - 生成最終決策 (核准/拒絕/轉介)
 - 應用安全鎖防止邏輯錯誤
 """
 
 import json
 import logging
+import time
 from datetime import datetime
 from typing import Dict, List, Any, Tuple
 
@@ -37,6 +39,9 @@ from config import (
 
 # 使用絕對路徑 import BaseExpert
 from experts.base import BaseExpert
+
+# 🔍 導入 RAG Service
+from services.rag_service import rag_engine
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,100 @@
+# ============================================================
+# Docker Ignore File
+# Prevents unnecessary files from being copied to image
+# ============================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+*.manifest
+*.spec
+
+# Virtual environments
+venv
+.venv
+ENV
+env
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.nox
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Logs
+logs
+*.log
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Model weights (mount as volume instead)
+models/*.pth
+models/*.bin
+models/*.safetensors
+moe/models/*.pth
+
+# Cache
+.cache
+*.cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation builds
+docs/_build
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Large files
+*.h5
+*.hdf5
+*.pkl
+*.pickle

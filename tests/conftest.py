@@ -110,7 +110,7 @@ def sample_conversation_history():
 
 @pytest.fixture
 def sample_rag_history():
-    """RAG 歷史紀錄"""
+    """RAG 歷史紀錄 (user_history)"""
     return [
         {
             "user_id": "A123456789",
@@ -127,6 +127,61 @@ def sample_rag_history():
             }
         }
     ]
+
+
+@pytest.fixture
+def sample_case_library():
+    """RAG 案例庫 (case_library)"""
+    return [
+        {
+            "content": "職業:軟體工程師，月薪:80000，貸款金額:500000，審核結果:核准_PASS",
+            "embedding": [0.1] * 384,
+            "metadata": {
+                "hist_job": "軟體工程師",
+                "hist_income": 80000,
+                "amount": 500000,
+                "approved_amount": 500000,
+                "final_decision": "核准_PASS",
+                "rate": 2.5
+            },
+            "score": 0.92
+        },
+        {
+            "content": "職業:業務員，月薪:45000，貸款金額:800000，審核結果:拒絕_REJECT",
+            "embedding": [0.1] * 384,
+            "metadata": {
+                "hist_job": "業務員",
+                "hist_income": 45000,
+                "amount": 800000,
+                "approved_amount": 0,
+                "final_decision": "拒絕_REJECT"
+            },
+            "score": 0.75
+        }
+    ]
+
+
+@pytest.fixture
+def sample_fre_task_data():
+    """FRE 專用 task_data"""
+    return {
+        "user_query": "請幫我審核",
+        "profile_state": {
+            "name": "王小明",
+            "id": "A123456789",
+            "job": "軟體工程師",
+            "income": 80000,
+            "purpose": "購車",
+            "amount": 500000,
+            "company": "台積電"
+        },
+        "verification_status": "verified",
+        "dve_result": {
+            "risk_level": "LOW",
+            "check_status": "CHECKED",
+            "mismatches": []
+        }
+    }
 
 
 # ==========================================

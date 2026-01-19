@@ -23,7 +23,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1  # Use 1 GPU, change to 'all' for multiple GPUs
+              count: all  # Use 1 GPU, change to 'all' for multiple GPUs
               capabilities: [gpu]
     
     # Environment variables

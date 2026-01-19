@@ -30,7 +30,7 @@
 - [Installation & Setup](#-installation--setup)
 - [Evaluation & Benchmarks](#-evaluation--benchmarks)
 - [Limitations & Expectation](#-limitations--expectation)
-- [Citation](#-citation)
+- [Project Background](#-project-background)
 - [License](#-license)
 
 ## 📖 Abstract
@@ -358,6 +358,16 @@ The core of Loan-MoE is a **dynamic routing mechanism** that orchestrates specia
 | Web UI (React + FastAPI) | Medium | In Progress |
 | Kubernetes deployment | Low | Planned |
 | Model distillation for CPU | Low | Research |
+
+---
+
+## 🎓 Project Background
+
+This repository originates from an undergraduate research project focused on
+automating financial loan inquiries using a Mixture of Experts (MoE) architecture.
+
+It is presented here as a technical portfolio project, emphasizing system architecture,
+expert decomposition, and practical data engineering considerations.
 
 ---
 

@@ -12,3 +12,8 @@ flask
 line-bot-sdk
 redis
 numpy
+fastapi
+sentence-transformers
+google-genai
+pymongo
+pytest

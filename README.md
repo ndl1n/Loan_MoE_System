@@ -5,6 +5,7 @@
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 ![Transformers](https://img.shields.io/badge/🤗_Transformers-4.36%2B-FFD21E?style=for-the-badge)
+![PEFT](https://img.shields.io/badge/PEFT-LoRA-FF6F00?style=for-the-badge)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7.0%2B-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
@@ -24,11 +25,9 @@
 - [System Architecture](#-system-architecture)
 - [Methodology: The Three Experts](#-methodology-the-three-experts)
 - [Gating Network Design](#-gating-network-design)
-- [Data Flow & State Management](#-data-flow--state-management)
 - [Key Technical Innovations](#-key-technical-innovations)
 - [Tech Stack](#-tech-stack)
 - [Installation & Setup](#-installation--setup)
-- [Usage](#-usage)
 - [Evaluation & Benchmarks](#-evaluation--benchmarks)
 - [Limitations & Expectation](#-limitations--expectation)
 - [Citation](#-citation)
@@ -317,6 +316,7 @@ The core of Loan-MoE is a **dynamic routing mechanism** that orchestrates specia
 | **Vector DB** | MongoDB Atlas | Vector search for RAG |
 | **Cache** | Redis | Session state management |
 | **Testing** | pytest | Unit, integration, E2E tests |
+| **Bot** | LINE Messaging API SDK 3.5 | Human interaction |
 | **Environment** | Docker, WSL2 | Containerization |
 
 ### Model Specifications

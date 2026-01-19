@@ -245,3 +245,21 @@ CONFIDENCE_THRESHOLD = 0.6
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+# ==========================================
+# 🤖 LINE Bot 設定
+# ==========================================
+
+LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET", "")
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
+
+# ==========================================
+# 🌐 API Server 設定
+# ==========================================
+
+API_HOST = os.getenv("API_HOST", "0.0.0.0")
+API_PORT = int(os.getenv("API_PORT", 8000))
+DEBUG_MODE = os.getenv("DEBUG_MODE", "False").lower() == "true"
+
+# Webhook URL (供外部服務回呼)
+WEBHOOK_BASE_URL = os.getenv("WEBHOOK_BASE_URL", f"http://localhost:{API_PORT}")

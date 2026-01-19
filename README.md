@@ -29,7 +29,7 @@
 - [Tech Stack](#-tech-stack)
 - [Installation & Setup](#-installation--setup)
 - [Evaluation & Benchmarks](#-evaluation--benchmarks)
-- [Limitations & Expectation](#-limitations--expectation)
+- [Future Work](#-future-work)
 - [Project Background](#-project-background)
 - [License](#-license)
 
@@ -333,20 +333,93 @@ The core of Loan-MoE is a **dynamic routing mechanism** that orchestrates specia
 ## 💻 Installation & Setup
 
 ### Prerequisites
-* OS: Linux (Ubuntu 20.04+) or Windows WSL2
-* GPU: NVIDIA GPU with CUDA support (Recommended)
-* Python: 3.10+
+
+- **OS:** Linux (Ubuntu 20.04+) or Windows WSL2
+- **GPU:** NVIDIA GPU with ≥8GB VRAM (for inference)
+- **Python:** 3.10+
+- **CUDA:** 11.8+ (for GPU acceleration)
+
+### Step 1: Clone Repository
+
+```bash
+git clone https://github.com/yourusername/Loan-MoE.git
+cd Loan-MoE
+```
+
+### Step 2: Create Virtual Environment
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+.\venv\Scripts\activate   # Windows
+```
+
+### Step 3: Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Step 4: Configure Environment Variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+```ini
+# API Keys
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# MongoDB Atlas
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/
+DB_NAME=loan_system
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# Model Settings
+BASE_MODEL_PATH=unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit
+ENABLE_FINETUNED_MODELS=True
+```
+
+### Step 5: Download/Place Model Weights
+
+```bash
+# Directory structure
+models/
+├── LDE_adapter/
+│   ├── adapter_config.json
+│   └── adapter_model.safetensors
+├── DVE_adapter/
+│   └── ...
+├── FRE_adapter/
+│   └── ...
+└── moe/
+    └── saved_moe_gating_model.pth
+```
+
+### Step 6: Start Services
+
+```bash
+# Start Redis (Docker)
+docker run -d -p 6379:6379 redis:7
+
+# Verify MongoDB Atlas connection
+python -c "from services.database import mongo_db; print(mongo_db.is_connected())"
+```
+
+### Step 7: Run the System
+
+```bash
+python main.py
+```
 
 ---
 
-## ⚠️ Limitations & Expectation
-
-### Current Limitations
-
-1. **Single Language:** Currently supports Traditional Chinese only
-2. **Simplified Credit Model:** Uses heuristic scoring vs. full bureau integration
-3. **No Document OCR:** Requires manual data entry (no ID card scanning)
-4. **GPU Dependency:** Full functionality requires NVIDIA GPU
+## 📌 Future Work
 
 ### Planned Enhancements
 

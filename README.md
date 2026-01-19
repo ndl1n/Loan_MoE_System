@@ -5,12 +5,13 @@
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 ![Transformers](https://img.shields.io/badge/🤗_Transformers-4.36%2B-FFD21E?style=for-the-badge)
-![PEFT](https://img.shields.io/badge/PEFT-LoRA-FF6F00?style=for-the-badge)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.109%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7.0%2B-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![LINE](https://img.shields.io/badge/LINE_Bot-SDK_3.5-00C300?style=for-the-badge&logo=line&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**A Domain-Specific Large Language Model System for Automated Loan Processing, Verification, and Credit Decisioning**
+**A Domain-Specific Large Language Model System for Automated Loan Processing, Verification, and Credit Decisioning with LINE Bot Integration**
 
 </div>
 
@@ -19,6 +20,7 @@
 - [Abstract](#-abstract)
 - [Introduction](#-introduction)
 - [Related Work](#-related-work)
+- [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
 - [Methodology: The Three Experts](#-methodology-the-three-experts)
 - [Gating Network Design](#-gating-network-design)
@@ -82,6 +84,31 @@ Loan-MoE introduces a **hybrid Neuro-Symbolic architecture** that:
 3. **RAG-Enhanced Verification** for fraud detection against historical records
 4. **Safety Guard Framework** ensuring regulatory compliance
 5. **Open-Source Implementation** with comprehensive test suite
+
+---
+
+## ✨ Key Features
+
+### 🎯 Intelligent Routing
+- **State-aware MoE** routes entire conversations (not tokens) to specialized experts
+- **Guardrail system** ensures compliance with business rules before AI inference
+- **Dynamic expert switching** based on verification status
+
+### 🛡️ Neuro-Symbolic Safety
+- **Hard Math Layer**: Deterministic Python for DBR, credit scoring
+- **Soft Logic Layer**: Fine-tuned LLMs for qualitative assessment
+- **Circuit Breakers**: Post-inference validation prevents unsafe approvals
+
+### 🔍 RAG-Enhanced Verification
+- **MongoDB Atlas Vector Search** for historical record retrieval
+- **Mismatch detection** compares current input with historical data
+- **Risk classification** (LOW/MEDIUM/HIGH) drives routing decisions
+
+### 🔌 Production Ready
+- **FastAPI** REST API with OpenAPI documentation
+- **LINE Bot** integration with Flex Messages
+- **Docker Compose** for easy deployment
+- **Redis** session management with TTL
 
 ---
 

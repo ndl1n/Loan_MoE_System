@@ -206,7 +206,7 @@ The core of Loan-MoE is a **dynamic routing mechanism** that orchestrates specia
 | Multi-language support (EN, ZH-CN) | High | Planned |
 | Integration with credit bureaus | High | Planned |
 | Document OCR pipeline | Medium | Research |
-| Web UI (React + FastAPI) | Medium | In Progress |
+| Web UI (React) | Medium | Planned |
 | Kubernetes deployment | Low | Planned |
 | Model distillation for CPU | Low | Research |
 

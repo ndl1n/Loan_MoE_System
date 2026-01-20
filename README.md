@@ -25,8 +25,6 @@
 - [System Architecture](#-system-architecture)
 - [Methodology: The Three Experts](#-methodology-the-three-experts)
 - [Tech Stack](#-tech-stack)
-- [Installation & Setup](#-installation--setup)
-- [Evaluation & Benchmarks](#-evaluation--benchmarks)
 - [Future Work](#-future-work)
 - [Project Background](#-project-background)
 - [License](#-license)
@@ -171,15 +169,6 @@ The core of Loan-MoE is a **dynamic routing mechanism** that orchestrates specia
 
 ---
 
-## 🚀 Key Features
-
-* **State-Aware Routing:** The Gatekeeper doesn't just look at keywords; it analyzes `verification_status` and `profile_completeness` to determine the precise next step (e.g., escalating from LDE to DVE).
-* **Input Schema Alignment:** Advanced preprocessing ensures that Python-generated JSON inputs strictly match the expert's training data schema, minimizing Out-Of-Distribution (OOD) errors.
-* **Streamed Inference:** Real-time token streaming (`TextStreamer`) provides immediate visual feedback, enhancing User Experience (UX) even on resource-constrained hardware.
-* **Prompt Injection Defense:** Robust system prompts and output parsing logic prevent users from manipulating the risk scoring engine.
-
----
-
 ## 🛠 Tech Stack
 
 | Category | Technology | Purpose |
@@ -205,95 +194,6 @@ The core of Loan-MoE is a **dynamic routing mechanism** that orchestrates specia
 | LDE Adapter | LLaMA-3.1-8B | 8B (LoRA: 4M) | 4-bit | ~6GB |
 | DVE Adapter | LLaMA-3.1-8B | 8B (LoRA: 4M) | 4-bit | ~6GB |
 | FRE Adapter | LLaMA-3.1-8B | 8B (LoRA: 4M) | 4-bit | ~6GB |
-
----
-
-## 💻 Installation & Setup
-
-### Prerequisites
-
-- **OS:** Linux (Ubuntu 20.04+) or Windows WSL2
-- **GPU:** NVIDIA GPU with ≥8GB VRAM (for inference)
-- **Python:** 3.10+
-- **CUDA:** 11.8+ (for GPU acceleration)
-
-### Step 1: Clone Repository
-
-```bash
-git clone https://github.com/yourusername/Loan-MoE.git
-cd Loan-MoE
-```
-
-### Step 2: Create Virtual Environment
-
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-.\venv\Scripts\activate   # Windows
-```
-
-### Step 3: Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Step 4: Configure Environment Variables
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-```ini
-# API Keys
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# MongoDB Atlas
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/
-DB_NAME=loan_system
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# Model Settings
-BASE_MODEL_PATH=unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit
-ENABLE_FINETUNED_MODELS=True
-```
-
-### Step 5: Download/Place Model Weights
-
-```bash
-# Directory structure
-models/
-├── LDE_adapter/
-│   ├── adapter_config.json
-│   └── adapter_model.safetensors
-├── DVE_adapter/
-│   └── ...
-├── FRE_adapter/
-│   └── ...
-└── moe/
-    └── saved_moe_gating_model.pth
-```
-
-### Step 6: Start Services
-
-```bash
-# Start Redis (Docker)
-docker run -d -p 6379:6379 redis:7
-
-# Verify MongoDB Atlas connection
-python -c "from services.database import mongo_db; print(mongo_db.is_connected())"
-```
-
-### Step 7: Run the System
-
-```bash
-python main.py
-```
 
 ---
 
